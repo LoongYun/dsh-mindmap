@@ -1,0 +1,30 @@
+README.md
+  s_c5add4206fcec9::t_ea2fbd1c6233d1 39-41
+README.zh-CN.md
+  s_c5add4206fcec9::t_ea2fbd1c6233d1 41-43
+client.js
+  s_c5add4206fcec9::t_0317f9bfd92c13 1802-1823
+  s_c5add4206fcec9::t_d6bdc676d40cad 884-887,889-895
+  s_c5add4206fcec9::t_83775313188794 26-27,46-56,107-117
+  s_c5add4206fcec9::t_4a516c1c9db4c1 1840-1949
+  s_c5add4206fcec9::t_eb49e5d7a0910d 762,766-770,772-773,775-828,831-842
+  s_c5add4206fcec9::t_89d2d8aad135a1 995-1011,1097-1099,1106,1197,1633-1657
+  s_c5add4206fcec9::t_7a41d16d9b81a7 888,896,912
+  s_c5add4206fcec9::t_4b111adf878836 957-989
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "c97ceb88f3a3698c684278f07e06cabd5c97f6b0",
+  "prompts": {},
+  "sessions": {
+    "s_c5add4206fcec9": {
+      "agent_id": {
+        "tool": "deepseekharness",
+        "id": "session-da1aee4f-1d5b-4086-bc64-e5f8e009230b",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "YunLong <yunlongjiang@trip.com>"
+    }
+  }
+}
