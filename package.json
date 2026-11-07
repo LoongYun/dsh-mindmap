@@ -1,5 +1,5 @@
 {
-  "name": "@temptrip/dsh-mindmap",
+  "name": "@loongyun/dsh-mindmap",
   "version": "0.1.0",
   "private": true,
   "description": "Open, edit and export XMind, FreeMind, OPML, KityMinder and VYM mind maps in the DeepSeek Harness right sidebar",

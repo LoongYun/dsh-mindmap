@@ -8,15 +8,15 @@
  */
 
 window.__ModuleLoader__.load({
-  id: '@temptrip/dsh-mindmap',
+  id: '@loongyun/dsh-mindmap',
   factory(require) {
     const React = require('react')
     const h = React.createElement
     const { useCallback, useEffect, useMemo, useRef, useState } = React
 
     const NS = 'mindmap'
-    const TAB_ID = '@temptrip/dsh-mindmap:viewer'
-    const TAB_KIND = '@temptrip/dsh-mindmap:mindmap'
+    const TAB_ID = '@loongyun/dsh-mindmap:viewer'
+    const TAB_KIND = '@loongyun/dsh-mindmap:mindmap'
     const ADDRESS_PREFIX = 'dsh-resource://file/'
     const TAB_PATTERN = 'dsh-resource://file/**/*.{xmind,mm,opml,km,vym}'
     const FORMATS = new Set(['xmind', 'mm', 'opml', 'km', 'vym'])
