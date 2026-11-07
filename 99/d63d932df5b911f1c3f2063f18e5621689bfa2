@@ -1,0 +1,23 @@
+README.md
+  s_c5add4206fcec9::t_308c403d0ffdb7 3,5,7-9,11-12,14-15,17,19,21,27-28,30,32,34-37,39,41,43-46,48,51-52,55,57,59-61
+README.zh-CN.md
+  s_c5add4206fcec9::t_5d765c951162f1 1-69
+package.json
+  s_c5add4206fcec9::t_0ca1462eddfce5 21-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "99d63d932df5b911f1c3f2063f18e5621689bfa2",
+  "prompts": {},
+  "sessions": {
+    "s_c5add4206fcec9": {
+      "agent_id": {
+        "tool": "deepseekharness",
+        "id": "session-da1aee4f-1d5b-4086-bc64-e5f8e009230b",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "YunLong <yunlongjiang@trip.com>"
+    }
+  }
+}
