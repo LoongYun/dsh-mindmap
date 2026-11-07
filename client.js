@@ -757,12 +757,6 @@ window.__ModuleLoader__.load({
         'aria-hidden': true,
       }
       switch (name) {
-        case 'plus':
-          return h('svg', common, h('path', { d: 'M12 5v14M5 12h14' }))
-        case 'sibling':
-          return h('svg', common, h('path', { d: 'M5 6h9M5 6v12M14 6v6M14 12h5M19 12v6' }))
-        case 'trash':
-          return h('svg', common, h('path', { d: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6' }))
         case 'save':
           return h('svg', common, h('path', { d: 'M5 4h11l3 3v13H5zM8 4v6h8V4M8 20v-6h8v6' }))
         case 'download':
@@ -777,8 +771,6 @@ window.__ModuleLoader__.load({
           return h('svg', common, h('circle', { cx: 10.5, cy: 10.5, r: 6.5 }), h('path', { d: 'M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6' }))
         case 'zoomOut':
           return h('svg', common, h('circle', { cx: 10.5, cy: 10.5, r: 6.5 }), h('path', { d: 'M15.5 15.5L21 21M7.5 10.5h6' }))
-        case 'pencil':
-          return h('svg', common, h('path', { d: 'M4 20l4-1 11-11-3-3L5 16zM14 6l3 3' }))
         default:
           return null
       }
@@ -1247,12 +1239,6 @@ window.__ModuleLoader__.load({
             h(
               React.Fragment,
               null,
-              h('button', { className: 'mm-btn', title: t('addChild'), 'aria-label': t('addChild'), onClick: addChild, disabled: !selected }, h(Icon, { name: 'plus' })),
-              h('button', { className: 'mm-btn', title: t('addSibling'), 'aria-label': t('addSibling'), onClick: addSibling, disabled: !selected }, h(Icon, { name: 'sibling' })),
-              h('button', { className: 'mm-btn', title: t('rename'), 'aria-label': t('rename'), onClick: startRename, disabled: !selected }, h(Icon, { name: 'pencil' })),
-              h('button', { className: 'mm-btn', title: t('remove'), 'aria-label': t('remove'), onClick: removeSelected, disabled: !selected || selected === sheet.root.id }, h(Icon, { name: 'trash' })),
-              h('button', { className: 'mm-btn', title: t('collapse'), 'aria-label': t('collapse'), onClick: toggleCollapse, disabled: !selected }, h('span', { style: { fontSize: 13, fontWeight: 700 } }, '±')),
-              h('span', { className: 'mm-sep' }),
               h('button', { className: 'mm-btn', title: t('undo'), 'aria-label': t('undo'), onClick: undo, disabled: history.past.length === 0 }, h(Icon, { name: 'undo' })),
               h('button', { className: 'mm-btn', title: t('redo'), 'aria-label': t('redo'), onClick: redo, disabled: history.future.length === 0 }, h(Icon, { name: 'redo' })),
               h('span', { className: 'mm-sep' }),
