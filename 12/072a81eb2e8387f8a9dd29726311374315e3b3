@@ -1,0 +1,31 @@
+index.js
+  s_c5add4206fcec9::t_47ae214d8fd2fe 262-336,338-400,403-501
+  s_c5add4206fcec9::t_033d56a6ea0622 31-63
+  s_c5add4206fcec9::t_f4a2c441658745 19-30,69,84-86
+  s_c5add4206fcec9::t_cced20aaa3a9fd 337,401-402
+README.md
+  s_c5add4206fcec9::t_b5467d8821051f 47-71
+README.zh-CN.md
+  s_c5add4206fcec9::t_b5467d8821051f 49-74
+package.json
+  s_c5add4206fcec9::t_f5da8845a276c0 3,5,17
+lib/mindmap.js
+  s_c5add4206fcec9::t_cdfbff6e9f3487 1-238,240-270,272-287,290-322,324-697
+  s_c5add4206fcec9::t_f00895bf28901b 239,271,288-289,323
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "12072a81eb2e8387f8a9dd29726311374315e3b3",
+  "prompts": {},
+  "sessions": {
+    "s_c5add4206fcec9": {
+      "agent_id": {
+        "tool": "deepseekharness",
+        "id": "session-da1aee4f-1d5b-4086-bc64-e5f8e009230b",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "YunLong <yunlongjiang@trip.com>"
+    }
+  }
+}
