@@ -729,7 +729,7 @@ window.__ModuleLoader__.load({
 .mm-node-root { fill: var(--mm-node-root, rgba(94,234,212,.18)); stroke: var(--mm-node-root-stroke, rgba(45,212,191,.7)); }
 .mm-node-sel { stroke: #3b82f6; stroke-width: 2; fill: rgba(59,130,246,.16); }
 .mm-label { fill: currentColor; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; pointer-events: none; }
-.mm-toggle { fill: var(--mm-toggle, rgba(127,127,127,.9)); stroke: var(--mm-surface, transparent); stroke-width: 2; }
+.mm-toggle { fill: var(--mm-toggle, rgba(127,127,127,.9)); stroke: var(--mm-surface, transparent); stroke-width: 2; cursor: pointer; }
 .mm-toggle-text { fill: #fff; font: 600 9px -apple-system, sans-serif; pointer-events: none; }
 .mm-input { position: absolute; box-sizing: border-box; padding: 6px 10px; border: 2px solid #3b82f6; border-radius: 9px; background: var(--mm-input, #fff); color: #111827; outline: none; font-family: inherit; z-index: 3; }
 .mm-status { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); max-width: 90%; padding: 6px 12px; border-radius: 8px; background: rgba(17,24,39,.9); color: #f9fafb; font-size: 12px; z-index: 4; pointer-events: none; }
