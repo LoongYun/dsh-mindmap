@@ -355,18 +355,24 @@ window.__ModuleLoader__.load({
       const decoder = new TextDecoder()
       const contentJson = files.get('content.json')
       if (contentJson) {
-        const data = JSON.parse(decoder.decode(contentJson))
-        const sheets = (data.sheets ?? []).map((sheet) => {
-          const topic = sheet.rootTopic ?? sheet.root
-          if (!topic) throw new Error('XMind sheet has no root topic')
-          return { title: cleanText(sheet.title ?? '') || 'Sheet', root: readXmindTopic(topic) }
-        })
-        if (sheets.length === 0) throw new Error('XMind file has no sheets')
-        return { format: 'xmind', editable: false, sheets }
+        let data
+        try {
+          data = JSON.parse(decoder.decode(contentJson))
+        } catch {
+          data = undefined
+        }
+        const rawSheets = data ? (Array.isArray(data) ? data : (data.sheets ?? [])) : []
+        const sheets = []
+        for (const sheet of rawSheets) {
+          const topic = sheet?.rootTopic ?? sheet?.root
+          if (!topic) continue
+          sheets.push({ title: cleanText(sheet.title ?? '') || 'Sheet', root: readXmindTopic(topic) })
+        }
+        if (sheets.length > 0) return { format: 'xmind', editable: false, sheets }
       }
 
       const contentXml = files.get('content.xml')
-      if (!contentXml) throw new Error('Not an XMind file (content.json / content.xml missing)')
+      if (!contentXml) throw new Error('XMind file has no sheets')
       const doc = parseXml(decoder.decode(contentXml))
       const sheetElements = doc.getElementsByTagName('sheet')
       const sheets = []
