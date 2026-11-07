@@ -1,0 +1,21 @@
+client.js
+  s_c5add4206fcec9::t_969556377d9306 984-1000
+  s_c5add4206fcec9::t_c346979e2efd9f 978
+  s_c5add4206fcec9::t_1c357f5fc5159a 68-69,108-109,774-777,890-895,1312-1321
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "0bc4cc51e48f3a4165f221e1b2c2efe3d0f14966",
+  "prompts": {},
+  "sessions": {
+    "s_c5add4206fcec9": {
+      "agent_id": {
+        "tool": "deepseekharness",
+        "id": "session-da1aee4f-1d5b-4086-bc64-e5f8e009230b",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "YunLong <yunlongjiang@trip.com>"
+    }
+  }
+}
