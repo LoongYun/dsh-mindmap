@@ -65,6 +65,8 @@ window.__ModuleLoader__.load({
         menuRemove: '删除',
         menuCollapse: '折叠',
         menuExpand: '展开',
+        collapseAll: '全部折叠',
+        expandAll: '全部展开',
       },
       en: {
         loading: 'Reading…',
@@ -103,6 +105,8 @@ window.__ModuleLoader__.load({
         menuRemove: 'Delete',
         menuCollapse: 'Collapse',
         menuExpand: 'Expand',
+        collapseAll: 'Collapse all',
+        expandAll: 'Expand all',
       },
     }
 
@@ -767,6 +771,10 @@ window.__ModuleLoader__.load({
           return h('svg', common, h('path', { d: 'M15 7h4v4M19 11c-2-5-7-6-11-3-3 2-4 6-2 9' }))
         case 'fit':
           return h('svg', common, h('path', { d: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5' }))
+        case 'collapseAll':
+          return h('svg', common, h('path', { d: 'M6 8l6 4 6-4M6 16l6-4 6 4' }))
+        case 'expandAll':
+          return h('svg', common, h('path', { d: 'M6 10l6-4 6 4M6 14l6 4 6-4' }))
         case 'zoomIn':
           return h('svg', common, h('circle', { cx: 10.5, cy: 10.5, r: 6.5 }), h('path', { d: 'M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6' }))
         case 'zoomOut':
@@ -879,6 +887,12 @@ window.__ModuleLoader__.load({
         setView({ k, x: width / 2 - (layout.width / 2) * k, y: height / 2 - (layout.height / 2) * k })
       }, [layout])
 
+      const anyExpanded = useMemo(() => {
+        if (!sheet) return false
+        const walk = (node) => (node.children.length > 0 && !node.collapsed) || node.children.some(walk)
+        return walk(sheet.root)
+      }, [sheet])
+
       const zoomCenter = useCallback((factor) => {
         const stage = stageRef.current
         if (!stage) return
@@ -961,11 +975,29 @@ window.__ModuleLoader__.load({
         (nextSheets, nextSelected) => {
           setHistory((current) => ({ past: [...current.past.slice(-49), doc.sheets], future: [] }))
           setDoc((current) => ({ ...current, sheets: nextSheets }))
-          setDirty(true)
+          if (doc && EDITABLE.has(doc.format)) setDirty(true)
           if (nextSelected !== undefined) setSelected(nextSelected)
         },
         [doc],
       )
+
+      const toggleAll = useCallback(() => {
+        if (!doc) return
+        const collapse = anyExpanded
+        const rootId = doc.sheets[active]?.root?.id
+        const sheets = doc.sheets.map((item, index) => {
+          if (index !== active) return item
+          const root = structuredClone(item.root)
+          const walk = (node) => {
+            if (node.children.length > 0) node.collapsed = collapse
+            node.children.forEach(walk)
+          }
+          walk(root)
+          return { ...item, root }
+        })
+        if (rootId) focusRef.current = { id: rootId, fit: true, x: 0, y: 0 }
+        commit(sheets)
+      }, [doc, active, anyExpanded, commit])
 
       const mutateNode = useCallback(
         (id, change) => {
@@ -1277,6 +1309,16 @@ window.__ModuleLoader__.load({
               h('button', { className: 'mm-btn', title: t('redo'), 'aria-label': t('redo'), onClick: redo, disabled: history.future.length === 0 }, h(Icon, { name: 'redo' })),
               h('span', { className: 'mm-sep' }),
             ),
+          h(
+            'button',
+            {
+              className: 'mm-btn',
+              title: anyExpanded ? t('collapseAll') : t('expandAll'),
+              'aria-label': anyExpanded ? t('collapseAll') : t('expandAll'),
+              onClick: toggleAll,
+            },
+            h(Icon, { name: anyExpanded ? 'collapseAll' : 'expandAll' }),
+          ),
           h('button', { className: 'mm-btn', title: t('zoomOut'), 'aria-label': t('zoomOut'), onClick: () => zoomCenter(1 / 1.2) }, h(Icon, { name: 'zoomOut' })),
           h('button', { className: 'mm-btn', title: t('zoomIn'), 'aria-label': t('zoomIn'), onClick: () => zoomCenter(1.2) }, h(Icon, { name: 'zoomIn' })),
           h('button', { className: 'mm-btn', title: t('fit'), 'aria-label': t('fit'), onClick: fit }, h(Icon, { name: 'fit' })),
