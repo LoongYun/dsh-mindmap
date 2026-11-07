@@ -67,6 +67,8 @@ window.__ModuleLoader__.load({
         menuExpand: '展开',
         collapseAll: '全部折叠',
         expandAll: '全部展开',
+        toEnglish: 'Switch to English',
+        toChinese: '切换到中文',
       },
       en: {
         loading: 'Reading…',
@@ -107,6 +109,8 @@ window.__ModuleLoader__.load({
         menuExpand: 'Expand',
         collapseAll: 'Collapse all',
         expandAll: 'Expand all',
+        toEnglish: 'Switch to English',
+        toChinese: '切换到中文',
       },
     }
 
@@ -720,6 +724,7 @@ window.__ModuleLoader__.load({
 .mm-btn:hover:not(:disabled) { background: var(--mm-hover, rgba(127,127,127,.16)); opacity: 1; }
 .mm-btn:disabled { opacity: .32; cursor: default; }
 .mm-btn[data-active="true"] { background: var(--mm-hover, rgba(127,127,127,.16)); }
+.mm-lang { width: auto; min-width: 28px; padding: 0 5px; font-size: 11px; font-weight: 650; letter-spacing: .02em; }
 .mm-sep { width: 1px; height: 18px; background: var(--mm-line, rgba(127,127,127,.22)); margin: 0 4px; }
 .mm-spacer { flex: 1; }
 .mm-select { height: 28px; max-width: 170px; border: 1px solid var(--mm-line, rgba(127,127,127,.28)); border-radius: 7px; background: var(--mm-surface, transparent); color: inherit; font: inherit; font-size: 12px; }
@@ -787,7 +792,14 @@ window.__ModuleLoader__.load({
     function MindMapView(props) {
       const { ctx, useTabInfo } = props
       const { tab } = useTabInfo()
-      const t = useMemo(() => ctx.locale.bind(NS), [ctx])
+      const [lang, setLang] = useState(() => {
+        try {
+          return localStorage.getItem('dsh-mindmap:lang') === 'en' ? 'en' : 'zh'
+        } catch {
+          return 'zh'
+        }
+      })
+      const t = useCallback((key) => (DICTS[lang] ?? DICTS.zh)[key] ?? key, [lang])
       const address = tab.contentId ?? tab.navigation?.address
       const [state, setState] = useState({ status: 'loading' })
       const [reloadKey, setReloadKey] = useState(0)
@@ -1348,6 +1360,25 @@ window.__ModuleLoader__.load({
               h(Icon, { name: 'save' }),
             ),
           h('button', { className: 'mm-btn', title: t('export'), 'aria-label': t('export'), onClick: exportMm }, h(Icon, { name: 'download' })),
+          h('span', { className: 'mm-sep' }),
+          h(
+            'button',
+            {
+              className: 'mm-btn mm-lang',
+              title: lang === 'zh' ? t('toEnglish') : t('toChinese'),
+              'aria-label': lang === 'zh' ? t('toEnglish') : t('toChinese'),
+              onClick: () => {
+                const next = lang === 'zh' ? 'en' : 'zh'
+                setLang(next)
+                try {
+                  localStorage.setItem('dsh-mindmap:lang', next)
+                } catch {
+                  /* storage may be unavailable */
+                }
+              },
+            },
+            lang === 'zh' ? 'EN' : '中',
+          ),
         ),
         h(
           'div',
