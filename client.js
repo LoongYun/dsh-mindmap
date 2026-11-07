@@ -59,6 +59,12 @@ window.__ModuleLoader__.load({
         note: '备注',
         empty: '这个文件里没有可显示的主题',
         stats: '{nodes} 个主题',
+        menuAddChild: '新建子主题',
+        menuAddSibling: '新建同级主题',
+        menuRename: '重命名',
+        menuRemove: '删除',
+        menuCollapse: '折叠',
+        menuExpand: '展开',
       },
       en: {
         loading: 'Reading…',
@@ -91,6 +97,12 @@ window.__ModuleLoader__.load({
         note: 'Note',
         empty: 'No topics to show in this file',
         stats: '{nodes} topics',
+        menuAddChild: 'New child topic',
+        menuAddSibling: 'New sibling topic',
+        menuRename: 'Rename',
+        menuRemove: 'Delete',
+        menuCollapse: 'Collapse',
+        menuExpand: 'Expand',
       },
     }
 
@@ -724,6 +736,11 @@ window.__ModuleLoader__.load({
 .mm-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; height: 100%; padding: 24px; text-align: center; font-size: 13px; opacity: .8; }
 .mm-center strong { font-size: 14px; opacity: 1; }
 .mm-center pre { max-width: 100%; overflow: auto; font-size: 11px; text-align: left; opacity: .7; }
+.mm-menu { position: fixed; z-index: 20; min-width: 172px; padding: 5px; border-radius: 9px; background: rgba(24,24,27,.97); color: #f4f4f5; border: 1px solid rgba(255,255,255,.12); box-shadow: 0 10px 30px rgba(0,0,0,.35); backdrop-filter: blur(10px); }
+.mm-menu-item { display: flex; align-items: center; width: 100%; padding: 7px 10px; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
+.mm-menu-item:hover:not(:disabled) { background: rgba(255,255,255,.1); }
+.mm-menu-item:disabled { opacity: .35; cursor: default; }
+.mm-menu-sep { height: 1px; margin: 4px 6px; background: rgba(255,255,255,.12); }
 .mm-link { opacity: .85; }
 `
 
@@ -781,6 +798,7 @@ window.__ModuleLoader__.load({
       const [history, setHistory] = useState({ past: [], future: [] })
       const [selected, setSelected] = useState(undefined)
       const [editing, setEditing] = useState(undefined)
+      const [menu, setMenu] = useState(undefined)
       const [view, setView] = useState({ x: 0, y: 0, k: 1 })
       const [toast, setToast] = useState('')
       const [saving, setSaving] = useState(false)
@@ -917,6 +935,20 @@ window.__ModuleLoader__.load({
         stage.addEventListener('wheel', onWheel, { passive: false })
         return () => stage.removeEventListener('wheel', onWheel)
       }, [state.status])
+
+      useEffect(() => {
+        if (!menu) return undefined
+        const close = () => setMenu(undefined)
+        const onKey = (event) => {
+          if (event.key === 'Escape') setMenu(undefined)
+        }
+        document.addEventListener('pointerdown', close)
+        document.addEventListener('keydown', onKey, true)
+        return () => {
+          document.removeEventListener('pointerdown', close)
+          document.removeEventListener('keydown', onKey, true)
+        }
+      }, [menu])
 
       const commit = useCallback(
         (nextSheets, nextSelected) => {
@@ -1308,6 +1340,12 @@ window.__ModuleLoader__.load({
                       event.stopPropagation()
                       if (editable) setEditing({ id: node.id, value: node.text })
                     },
+                    onContextMenu: (event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      setSelected(node.id)
+                      setMenu({ x: event.clientX, y: event.clientY, id: node.id })
+                    },
                   },
                   h('rect', { className: cls, width: node._w, height: node._h, rx: isRoot ? 12 : 10 }),
                   node._lines.map((line, index) =>
@@ -1376,6 +1414,46 @@ window.__ModuleLoader__.load({
                   }
                 },
               })
+            : null,
+          menu
+            ? (() => {
+                const menuNode = layout.byId.get(menu.id)?.node
+                const atRoot = menu.id === sheet.root.id
+                const left = Math.max(8, Math.min(menu.x, (window.innerWidth || 1200) - 190))
+                const top = Math.max(8, Math.min(menu.y, (window.innerHeight || 800) - 230))
+                const item = (label, action, disabled) =>
+                  h(
+                    'button',
+                    {
+                      type: 'button',
+                      role: 'menuitem',
+                      className: 'mm-menu-item',
+                      disabled: !!disabled,
+                      onClick: () => {
+                        setMenu(undefined)
+                        action()
+                      },
+                    },
+                    label,
+                  )
+                return h(
+                  'div',
+                  {
+                    className: 'mm-menu',
+                    role: 'menu',
+                    style: { left, top },
+                    onPointerDown: (event) => event.stopPropagation(),
+                    onContextMenu: (event) => event.preventDefault(),
+                  },
+                  item(t('menuAddChild'), addChild, !editable),
+                  item(t('menuAddSibling'), addSibling, !editable || atRoot),
+                  h('div', { className: 'mm-menu-sep' }),
+                  item(t('menuRename'), startRename, !editable),
+                  item(menuNode?.collapsed ? t('menuExpand') : t('menuCollapse'), toggleCollapse),
+                  h('div', { className: 'mm-menu-sep' }),
+                  item(t('menuRemove'), removeSelected, !editable || atRoot),
+                )
+              })()
             : null,
           toast ? h('div', { className: 'mm-status' }, toast) : null,
         ),
