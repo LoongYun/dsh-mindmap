@@ -797,6 +797,7 @@ window.__ModuleLoader__.load({
       const [needsFit, setNeedsFit] = useState(true)
       const [size, setSize] = useState({ width: 800, height: 600 })
       const stageRef = useRef(null)
+      const focusRef = useRef(undefined)
       const dragRef = useRef(undefined)
       const toastTimer = useRef(undefined)
 
@@ -895,6 +896,20 @@ window.__ModuleLoader__.load({
           fit()
         }
       }, [needsFit, layout, fit])
+
+      useEffect(() => {
+        const pending = focusRef.current
+        if (!pending || !layout) return
+        focusRef.current = undefined
+        if (pending.fit) {
+          fit()
+          return
+        }
+        const stage = stageRef.current
+        const entry = layout.byId.get(pending.id)
+        if (!stage || !entry) return
+        setView((current) => ({ ...current, x: pending.x - entry.node._x * current.k, y: pending.y - entry.node._y * current.k }))
+      }, [layout, fit])
 
       useEffect(() => {
         const stage = stageRef.current
@@ -1023,13 +1038,32 @@ window.__ModuleLoader__.load({
         if (sheets) commit(sheets, parent.id)
       }, [doc, selected, active, findParent, mutateNode, commit])
 
+      const toggleNode = useCallback(
+        (id) => {
+          if (!id) return
+          const entry = layout?.byId.get(id)
+          const stage = stageRef.current
+          const rootId = doc?.sheets?.[active]?.root?.id
+          if (entry) {
+            focusRef.current = {
+              id,
+              fit: id === rootId,
+              x: stage ? view.x + entry.node._x * view.k : 0,
+              y: stage ? view.y + entry.node._y * view.k : 0,
+            }
+          }
+          stageRef.current?.focus?.({ preventScroll: true })
+          const sheets = mutateNode(id, (target) => {
+            target.collapsed = !target.collapsed
+          })
+          if (sheets) commit(sheets)
+        },
+        [layout, view, doc, active, mutateNode, commit],
+      )
+
       const toggleCollapse = useCallback(() => {
-        if (!selected) return
-        const sheets = mutateNode(selected, (target) => {
-          target.collapsed = !target.collapsed
-        })
-        if (sheets) commit(sheets)
-      }, [selected, mutateNode, commit])
+        if (selected) toggleNode(selected)
+      }, [selected, toggleNode])
 
       const startRename = useCallback(() => {
         if (!doc || !EDITABLE.has(doc.format) || !selected) return
@@ -1358,10 +1392,7 @@ window.__ModuleLoader__.load({
                           onClick: (event) => {
                             event.stopPropagation()
                             setSelected(node.id)
-                            const sheets = mutateNode(node.id, (target) => {
-                              target.collapsed = !target.collapsed
-                            })
-                            if (sheets) commit(sheets)
+                            toggleNode(node.id)
                           },
                         },
                         h('circle', { r: 8, className: 'mm-toggle' }),
