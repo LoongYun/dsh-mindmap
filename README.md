@@ -33,7 +33,7 @@ There is no build step: DSH loads `client.js` directly as a browser module.
 
 - Click a `.mm`, `.opml`, `.km`, `.vym` or `.xmind` file in the workspace file tree to open it in the right sidebar.
 - Double-click a topic to rename it. `Tab` adds a child, `Enter` adds a sibling, `F2` renames, `Delete` deletes.
-- `⌘Z` / `⇧⌘Z` undo and redo, `Space` collapses or expands, the wheel zooms, drag to pan.
+- `⌘Z` / `⇧⌘Z` undo and redo, `Space` collapses or expands, `Ctrl`/`⌘` + wheel zooms at the cursor, the wheel pans, drag to pan.
 - `⌘S` or the toolbar button saves. `.xmind` has no save button; use **Export to .mm**.
 
 Saving only overwrites editable files that already exist. For new content, use **Export to .mm** — this is a deliberate safety boundary.

@@ -901,17 +901,22 @@ window.__ModuleLoader__.load({
         if (!stage) return undefined
         const onWheel = (event) => {
           event.preventDefault()
-          const rect = stage.getBoundingClientRect()
-          const px = event.clientX - rect.left
-          const py = event.clientY - rect.top
-          setView((current) => {
-            const next = Math.max(0.16, Math.min(3, current.k * Math.exp(-event.deltaY * 0.0015)))
-            return { k: next, x: px - ((px - current.x) / current.k) * next, y: py - ((py - current.y) / current.k) * next }
-          })
+          if (event.ctrlKey || event.metaKey) {
+            const rect = stage.getBoundingClientRect()
+            const px = event.clientX - rect.left
+            const py = event.clientY - rect.top
+            setView((current) => {
+              const next = Math.max(0.16, Math.min(3, current.k * Math.exp(-event.deltaY * 0.002)))
+              return { k: next, x: px - ((px - current.x) / current.k) * next, y: py - ((py - current.y) / current.k) * next }
+            })
+            return
+          }
+          const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? stage.clientHeight : 1
+          setView((current) => ({ ...current, x: current.x - event.deltaX * unit, y: current.y - event.deltaY * unit }))
         }
         stage.addEventListener('wheel', onWheel, { passive: false })
         return () => stage.removeEventListener('wheel', onWheel)
-      }, [])
+      }, [state.status])
 
       const commit = useCallback(
         (nextSheets, nextSelected) => {
