@@ -2,8 +2,6 @@
 
 在 [DeepSeek Harness](https://github.com/deepseek-ai) 右侧栏直接打开、编辑和导出思维导图文件。
 
-![DSH 侧栏中的思维导图](docs/screenshot-mm.png)
-
 ## 支持的格式
 
 | 格式 | 打开 | 编辑并保存 | 导出 `.mm` |

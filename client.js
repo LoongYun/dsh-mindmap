@@ -868,6 +868,17 @@ window.__ModuleLoader__.load({
         setView({ k, x: width / 2 - (layout.width / 2) * k, y: height / 2 - (layout.height / 2) * k })
       }, [layout])
 
+      const zoomCenter = useCallback((factor) => {
+        const stage = stageRef.current
+        if (!stage) return
+        const px = stage.clientWidth / 2
+        const py = stage.clientHeight / 2
+        setView((v) => {
+          const k = Math.max(0.16, Math.min(3, v.k * factor))
+          return { k, x: px - ((px - v.x) / v.k) * k, y: py - ((py - v.y) / v.k) * k }
+        })
+      }, [])
+
       useEffect(() => {
         if (needsFit && layout) {
           setNeedsFit(false)
@@ -1209,8 +1220,8 @@ window.__ModuleLoader__.load({
               h('button', { className: 'mm-btn', title: t('redo'), 'aria-label': t('redo'), onClick: redo, disabled: history.future.length === 0 }, h(Icon, { name: 'redo' })),
               h('span', { className: 'mm-sep' }),
             ),
-          h('button', { className: 'mm-btn', title: t('zoomOut'), 'aria-label': t('zoomOut'), onClick: () => setView((v) => ({ ...v, k: Math.max(0.16, v.k / 1.2) })) }, h(Icon, { name: 'zoomOut' })),
-          h('button', { className: 'mm-btn', title: t('zoomIn'), 'aria-label': t('zoomIn'), onClick: () => setView((v) => ({ ...v, k: Math.min(3, v.k * 1.2) })) }, h(Icon, { name: 'zoomIn' })),
+          h('button', { className: 'mm-btn', title: t('zoomOut'), 'aria-label': t('zoomOut'), onClick: () => zoomCenter(1 / 1.2) }, h(Icon, { name: 'zoomOut' })),
+          h('button', { className: 'mm-btn', title: t('zoomIn'), 'aria-label': t('zoomIn'), onClick: () => zoomCenter(1.2) }, h(Icon, { name: 'zoomIn' })),
           h('button', { className: 'mm-btn', title: t('fit'), 'aria-label': t('fit'), onClick: fit }, h(Icon, { name: 'fit' })),
           doc.sheets.length > 1 &&
             h(
