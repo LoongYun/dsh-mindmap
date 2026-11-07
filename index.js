@@ -9,7 +9,9 @@
  *
  * The route enforces the connection fence, the session's workspace boundary,
  * the extension allow-list, the body size limit and an optimistic version
- * check before it writes.
+ * check before it writes. Both workspace-relative and absolute paths are
+ * accepted; containment is decided after resolution, so an absolute path
+ * outside the session's workspace is rejected.
  */
 
 import { realpath } from 'node:fs/promises'
@@ -73,7 +75,7 @@ async function handleSave(ctx, req, res) {
     respond(res, 400, { ok: false, error: 'invalid-request' })
     return
   }
-  if (relativePath.includes('\u0000') || path.isAbsolute(relativePath)) {
+  if (relativePath.includes('\u0000')) {
     respond(res, 400, { ok: false, error: 'invalid-path' })
     return
   }
