@@ -25,6 +25,12 @@ window.__ModuleLoader__.load({
     const GAP_Y = 18
     const PAD = 48
     const MAX_LINES = 4
+    const MAX_NODES = 20000
+    const LARGE_MAP_NODES = 4000
+    const MAX_TEXT_BYTES = 8 * 1024 * 1024
+    const MAX_ZIP_ENTRY_BYTES = 24 * 1024 * 1024
+    const MAX_ZIP_TOTAL_BYTES = 32 * 1024 * 1024
+    const MAX_ZIP_ENTRIES = 4096
     const NODE_FONT = '13px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif'
 
     const DICTS = {
@@ -64,6 +70,9 @@ window.__ModuleLoader__.load({
         note: '备注',
         empty: '这个文件里没有可显示的主题',
         stats: '{nodes} 个主题',
+        tooManyNodes: '这个文件有 {count} 个主题，超过 {limit} 个的处理上限，已停止加载',
+        fileTooLarge: '文件过大（超过 8 MB），暂不支持打开',
+        largeMap: '大图模式：{count} 个主题，交互仍可能变慢',
         menuAddChild: '新建子主题',
         menuAddSibling: '新建同级主题',
         menuRename: '重命名',
@@ -111,6 +120,9 @@ window.__ModuleLoader__.load({
         note: 'Note',
         empty: 'No topics to show in this file',
         stats: '{nodes} topics',
+        tooManyNodes: 'This file has {count} topics, above the {limit}-topic limit',
+        fileTooLarge: 'This file is larger than the 8 MB text limit',
+        largeMap: 'Large map: {count} topics; interaction may still be slow',
         menuAddChild: 'New child topic',
         menuAddSibling: 'New sibling topic',
         menuRename: 'Rename',
@@ -446,35 +458,69 @@ window.__ModuleLoader__.load({
       }
       if (eocd < 0) throw new Error('Not a zip container')
       const count = view.getUint16(eocd + 10, true)
+      if (count > MAX_ZIP_ENTRIES) throw new Error('XMind archive has too many entries')
       let offset = view.getUint32(eocd + 16, true)
       const files = new Map()
+      let total = 0
       for (let i = 0; i < count; i += 1) {
-        if (view.getUint32(offset, true) !== 0x02014b50) break
+        if (offset + 46 > u8.length || view.getUint32(offset, true) !== 0x02014b50) break
         const method = view.getUint16(offset + 10, true)
         const compressedSize = view.getUint32(offset + 20, true)
+        const uncompressedSize = view.getUint32(offset + 24, true)
         const nameLength = view.getUint16(offset + 28, true)
         const extraLength = view.getUint16(offset + 30, true)
         const commentLength = view.getUint16(offset + 32, true)
         const localOffset = view.getUint32(offset + 42, true)
         const name = new TextDecoder().decode(u8.subarray(offset + 46, offset + 46 + nameLength))
         offset += 46 + nameLength + extraLength + commentLength
-        if (view.getUint32(localOffset, true) !== 0x04034b50) continue
+        if (name !== 'content.json' && name !== 'content.xml') continue
+        if (uncompressedSize > MAX_ZIP_ENTRY_BYTES) throw new Error('XMind content is too large')
+        if (total + uncompressedSize > MAX_ZIP_TOTAL_BYTES) throw new Error('XMind content is too large')
+        if (localOffset + 30 > u8.length || view.getUint32(localOffset, true) !== 0x04034b50) continue
         const localNameLength = view.getUint16(localOffset + 26, true)
         const localExtraLength = view.getUint16(localOffset + 28, true)
         const start = localOffset + 30 + localNameLength + localExtraLength
-        const raw = u8.subarray(start, start + compressedSize)
-        if (method === 0) files.set(name, raw)
-        else if (method === 8) files.set(name, await inflateRaw(raw))
+        const end = start + compressedSize
+        if (end > u8.length) throw new Error('Damaged zip container')
+        const raw = u8.subarray(start, end)
+        if (method === 0) {
+          files.set(name, raw)
+          total += raw.length
+        } else if (method === 8) {
+          const limit = uncompressedSize > 0 ? Math.min(MAX_ZIP_ENTRY_BYTES, uncompressedSize) : MAX_ZIP_ENTRY_BYTES
+          const data = await inflateRaw(raw, limit)
+          files.set(name, data)
+          total += data.length
+        }
       }
       return files
     }
 
-    async function inflateRaw(data) {
+    async function inflateRaw(data, limit = MAX_ZIP_ENTRY_BYTES) {
       if (typeof DecompressionStream === 'undefined') {
         throw new Error('This browser cannot decompress .xmind files')
       }
       const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))
-      return new Uint8Array(await new Response(stream).arrayBuffer())
+      const reader = stream.getReader()
+      const chunks = []
+      let total = 0
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        total += value.length
+        if (total > limit) {
+          reader.cancel().catch(() => {})
+          throw new Error('XMind content is too large')
+        }
+        chunks.push(value)
+      }
+      const out = new Uint8Array(total)
+      let at = 0
+      for (const chunk of chunks) {
+        out.set(chunk, at)
+        at += chunk.length
+      }
+      return out
     }
 
     function toBytes(value) {
@@ -493,21 +539,33 @@ window.__ModuleLoader__.load({
     }
 
     async function parseFile(format, bytes) {
+      if (format !== 'xmind' && bytes.length > MAX_TEXT_BYTES) throw new Error('FILE_TOO_LARGE')
       const text = format === 'xmind' ? '' : new TextDecoder().decode(bytes)
+      let doc
       switch (format) {
         case 'mm':
-          return parseMm(text)
+          doc = parseMm(text)
+          break
         case 'opml':
-          return parseOpml(text)
+          doc = parseOpml(text)
+          break
         case 'km':
-          return parseKm(text)
+          doc = parseKm(text)
+          break
         case 'vym':
-          return parseVym(text)
+          doc = parseVym(text)
+          break
         case 'xmind':
-          return parseXmind(bytes)
+          doc = await parseXmind(bytes)
+          break
         default:
           throw new Error(`Unsupported format: ${format}`)
       }
+      let total = 0
+      for (const sheet of doc.sheets) total += countNodes(sheet.root)
+      if (total > MAX_NODES) throw new Error(`TOO_MANY_NODES:${total}`)
+      doc.totalNodes = total
+      return doc
     }
 
     // -------------------------------------------------------------- serializers
@@ -607,15 +665,21 @@ window.__ModuleLoader__.load({
       return measureContext.measureText(text).width
     }
 
+    const labelCache = new Map()
     function wrapLabel(value) {
       const text = cleanText(value).replace(/\s+/g, ' ') || ' '
+      const cached = labelCache.get(text)
+      if (cached) return cached
       const maxWidth = 240
       if (measureText(text) <= maxWidth) {
-        return {
+        const result = {
           lines: [text],
           width: Math.min(288, Math.max(112, Math.ceil(measureText(text)) + 30)),
           height: 40,
         }
+        if (labelCache.size > 4000) labelCache.clear()
+        labelCache.set(text, result)
+        return result
       }
       const lines = []
       let current = ''
@@ -636,7 +700,10 @@ window.__ModuleLoader__.load({
         lines[MAX_LINES - 1] = last + '…'
       }
       const width = Math.max(112, Math.min(288, Math.ceil(Math.max(...lines.map(measureText))) + 30))
-      return { lines, width, height: lines.length * 18 + 22 }
+      const result = { lines, width, height: lines.length * 18 + 22 }
+      if (labelCache.size > 4000) labelCache.clear()
+      labelCache.set(text, result)
+      return result
     }
 
     function measureTree(node) {
@@ -656,6 +723,12 @@ window.__ModuleLoader__.load({
       return total
     }
 
+    function countTree(node) {
+      node._count = 1
+      for (const child of node.children) node._count += countTree(child)
+      return node._count
+    }
+
     function collectNodes(node, parent, out) {
       out.push({ node, parent })
       for (const child of node._visibleChildren) collectNodes(child, node, out)
@@ -663,6 +736,7 @@ window.__ModuleLoader__.load({
     }
 
     function layoutMap(root) {
+      countTree(root)
       measureTree(root)
       const kids = root._visibleChildren
       const explicit = kids.some((kid) => kid.side === 'left' || kid.side === 'right')
@@ -811,6 +885,69 @@ window.__ModuleLoader__.load({
       }
     }
 
+    function historyLimitFor(totalNodes) {
+      if (totalNodes > 8000) return 10
+      if (totalNodes > LARGE_MAP_NODES) return 25
+      return 50
+    }
+
+    const MapNode = React.memo(function MapNode({ node, isRoot, selected, editable, onSelect, onEdit, onMenu, onToggle }) {
+      const cls = `mm-node${isRoot ? ' mm-node-root' : ''}${selected ? ' mm-node-sel' : ''}`
+      const textX = 14
+      const textY = node._h / 2 - ((node._lines.length - 1) * 18) / 2 + 5
+      return h(
+        'g',
+        {
+          'data-mm-node': node.id,
+          transform: `translate(${node._x},${node._y - node._h / 2})`,
+          onClick: (event) => {
+            event.stopPropagation()
+            onSelect(node.id)
+          },
+          onDoubleClick: (event) => {
+            event.stopPropagation()
+            if (editable) onEdit(node.id, node.text)
+          },
+          onContextMenu: (event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            onMenu(node.id, event.clientX, event.clientY)
+          },
+        },
+        h('rect', { className: cls, width: node._w, height: node._h, rx: isRoot ? 12 : 10 }),
+        node._lines.map((line, index) =>
+          h(
+            'text',
+            {
+              key: index,
+              className: 'mm-label',
+              x: textX,
+              y: textY + index * 18,
+              fontSize: isRoot ? 13.5 : 13,
+              fontWeight: isRoot ? 600 : 400,
+            },
+            line,
+          ),
+        ),
+        node.note ? h('circle', { cx: node._w - 9, cy: node._h - 9, r: 3, className: 'mm-node', fill: 'currentColor', opacity: 0.5 }) : null,
+        node.children.length > 0
+          ? h(
+              'g',
+              {
+                className: 'mm-toggle',
+                transform: `translate(${node._w},${node._h / 2})`,
+                onClick: (event) => {
+                  event.stopPropagation()
+                  onToggle(node.id)
+                },
+              },
+              h('circle', { r: 8, className: 'mm-toggle' }),
+              h('text', { className: 'mm-toggle-text', x: 0, y: 3.5, textAnchor: 'middle' }, node.collapsed ? `+${Math.max(0, (node._count ?? 1) - 1)}` : '−'),
+            )
+          : null,
+      )
+    })
+
     function MindMapView(props) {
       const { ctx, useTabInfo } = props
       const { tab } = useTabInfo()
@@ -839,6 +976,9 @@ window.__ModuleLoader__.load({
       const [needsFit, setNeedsFit] = useState(true)
       const [size, setSize] = useState({ width: 800, height: 600 })
       const stageRef = useRef(null)
+      const contentRef = useRef(null)
+      const viewRef = useRef({ x: 0, y: 0, k: 1 })
+      const wheelRef = useRef({ frame: 0, data: undefined })
       const focusRef = useRef(undefined)
       const dragRef = useRef(undefined)
       const toastTimer = useRef(undefined)
@@ -888,16 +1028,28 @@ window.__ModuleLoader__.load({
             setSelected(parsedDoc.sheets[0]?.root?.id)
             setNeedsFit(true)
             setState({ status: 'ready' })
+            if (parsedDoc.totalNodes > LARGE_MAP_NODES) {
+              say(t('largeMap').replace('{count}', String(parsedDoc.totalNodes)))
+            }
           } catch (error) {
             if (!alive || controller.signal.aborted) return
-            setState({ status: 'error', message: String(error?.message ?? error) })
+            const raw = String(error?.message ?? error)
+            let message = raw
+            if (raw.startsWith('TOO_MANY_NODES:')) {
+              message = t('tooManyNodes')
+                .replace('{count}', raw.slice('TOO_MANY_NODES:'.length))
+                .replace('{limit}', String(MAX_NODES))
+            } else if (raw === 'FILE_TOO_LARGE') {
+              message = t('fileTooLarge')
+            }
+            setState({ status: 'error', message })
           }
         })()
         return () => {
           alive = false
           controller.abort()
         }
-      }, [address, reloadKey, ctx, t])
+      }, [address, reloadKey, ctx, say, t])
 
       useEffect(() => {
         if (!dirty) return undefined
@@ -908,6 +1060,10 @@ window.__ModuleLoader__.load({
         window.addEventListener('beforeunload', guard)
         return () => window.removeEventListener('beforeunload', guard)
       }, [dirty])
+
+      useEffect(() => {
+        viewRef.current = view
+      }, [view])
 
       const sheet = doc?.sheets?.[active]
       const layout = useMemo(() => (sheet ? layoutMap(sheet.root) : undefined), [sheet])
@@ -972,20 +1128,32 @@ window.__ModuleLoader__.load({
       useEffect(() => {
         const stage = stageRef.current
         if (!stage) return undefined
+        const flushWheel = () => {
+          const data = wheelRef.current.data
+          wheelRef.current.frame = 0
+          if (!data) return
+          setView((current) => {
+            if (data.zoom) {
+              const next = Math.max(0.16, Math.min(3, current.k * Math.exp(-data.deltaY * 0.002)))
+              return { k: next, x: data.px - ((data.px - current.x) / current.k) * next, y: data.py - ((data.py - current.y) / current.k) * next }
+            }
+            return { ...current, x: current.x - data.deltaX * data.unit, y: current.y - data.deltaY * data.unit }
+          })
+        }
         const onWheel = (event) => {
           event.preventDefault()
-          if (event.ctrlKey || event.metaKey) {
-            const rect = stage.getBoundingClientRect()
-            const px = event.clientX - rect.left
-            const py = event.clientY - rect.top
-            setView((current) => {
-              const next = Math.max(0.16, Math.min(3, current.k * Math.exp(-event.deltaY * 0.002)))
-              return { k: next, x: px - ((px - current.x) / current.k) * next, y: py - ((py - current.y) / current.k) * next }
-            })
-            return
-          }
+          const rect = stage.getBoundingClientRect()
+          const zoom = event.ctrlKey || event.metaKey
           const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? stage.clientHeight : 1
-          setView((current) => ({ ...current, x: current.x - event.deltaX * unit, y: current.y - event.deltaY * unit }))
+          wheelRef.current.data = {
+            zoom,
+            px: event.clientX - rect.left,
+            py: event.clientY - rect.top,
+            deltaX: event.deltaX,
+            deltaY: event.deltaY,
+            unit,
+          }
+          if (!wheelRef.current.frame) wheelRef.current.frame = requestAnimationFrame(flushWheel)
         }
         stage.addEventListener('wheel', onWheel, { passive: false })
         return () => stage.removeEventListener('wheel', onWheel)
@@ -1005,14 +1173,16 @@ window.__ModuleLoader__.load({
         }
       }, [menu])
 
+      const historyLimit = historyLimitFor(doc?.totalNodes ?? 0)
+
       const commit = useCallback(
         (nextSheets, nextSelected) => {
-          setHistory((current) => ({ past: [...current.past.slice(-49), doc.sheets], future: [] }))
+          setHistory((current) => ({ past: [...current.past.slice(-(historyLimit - 1)), doc.sheets], future: [] }))
           setDoc((current) => ({ ...current, sheets: nextSheets }))
           if (doc && EDITABLE.has(doc.format)) setDirty(true)
           if (nextSelected !== undefined) setSelected(nextSelected)
         },
-        [doc],
+        [doc, historyLimit],
       )
 
       const toggleAll = useCallback(() => {
@@ -1154,17 +1324,17 @@ window.__ModuleLoader__.load({
         if (history.past.length === 0 || !doc) return
         const previous = history.past[history.past.length - 1]
         setDoc({ ...doc, sheets: previous })
-        setHistory({ past: history.past.slice(0, -1), future: [doc.sheets, ...history.future].slice(0, 50) })
+        setHistory({ past: history.past.slice(0, -1), future: [doc.sheets, ...history.future].slice(0, historyLimit) })
         setDirty(true)
-      }, [history, doc])
+      }, [history, doc, historyLimit])
 
       const redo = useCallback(() => {
         if (history.future.length === 0 || !doc) return
         const next = history.future[0]
         setDoc({ ...doc, sheets: next })
-        setHistory({ past: [...history.past, doc.sheets].slice(-50), future: history.future.slice(1) })
+        setHistory({ past: [...history.past, doc.sheets].slice(-historyLimit), future: history.future.slice(1) })
         setDirty(true)
-      }, [history, doc])
+      }, [history, doc, historyLimit])
 
       const download = useCallback((content, filename, mime) => {
         const blob = new Blob([content], { type: mime })
@@ -1327,21 +1497,37 @@ window.__ModuleLoader__.load({
         [editing, save, redo, undo, addChild, addSibling, startRename, removeSelected, toggleCollapse],
       )
 
+      const applyView = (next) => {
+        viewRef.current = next
+        contentRef.current?.setAttribute('transform', `translate(${next.x},${next.y}) scale(${next.k})`)
+      }
+      const selectNode = useCallback((id) => setSelected(id), [])
+      const beginEdit = useCallback((id, value) => setEditing({ id, value }), [])
+      const openNodeMenu = useCallback((id, x, y) => {
+        setSelected(id)
+        setMenu({ x, y, id })
+      }, [])
+
       const onPointerDown = (event) => {
         if (event.button !== 0) return
         if (event.target.closest?.('[data-mm-node]')) return
-        dragRef.current = { x: event.clientX, y: event.clientY, vx: view.x, vy: view.y }
+        const origin = viewRef.current
+        dragRef.current = { x: event.clientX, y: event.clientY, vx: origin.x, vy: origin.y, next: undefined }
         event.currentTarget.setPointerCapture?.(event.pointerId)
         event.currentTarget.dataset.dragging = 'true'
       }
       const onPointerMove = (event) => {
         const drag = dragRef.current
         if (!drag) return
-        setView((current) => ({ ...current, x: drag.vx + event.clientX - drag.x, y: drag.vy + event.clientY - drag.y }))
+        const next = { ...viewRef.current, x: drag.vx + event.clientX - drag.x, y: drag.vy + event.clientY - drag.y }
+        drag.next = next
+        applyView(next)
       }
       const endDrag = (event) => {
-        if (!dragRef.current) return
+        const drag = dragRef.current
+        if (!drag) return
         dragRef.current = undefined
+        if (drag.next) setView(drag.next)
         if (event?.currentTarget) event.currentTarget.dataset.dragging = 'false'
       }
 
@@ -1427,7 +1613,7 @@ window.__ModuleLoader__.load({
               doc.sheets.map((item, index) => h('option', { key: index, value: index }, item.title || `Sheet ${index + 1}`)),
             ),
           h('span', { className: 'mm-spacer' }),
-          h('span', { className: 'mm-badge' }, t('stats').replace('{nodes}', String(countNodes(sheet.root)))),
+          h('span', { className: 'mm-badge' }, t('stats').replace('{nodes}', String(layout.count))),
           !editable && h('span', { className: 'mm-badge' }, t('readOnly')),
           dirty && h('span', { className: 'mm-dirty', title: t('dirty') }),
           editable &&
@@ -1477,7 +1663,7 @@ window.__ModuleLoader__.load({
             { viewBox: `0 0 ${size.width} ${size.height}`, preserveAspectRatio: 'none' },
             h(
               'g',
-              { transform: `translate(${view.x},${view.y}) scale(${view.k})` },
+              { ref: contentRef, transform: `translate(${view.x},${view.y}) scale(${view.k})` },
               layout.entries.map(({ node, parent }) => {
                 if (!parent) return null
                 const p = parent
@@ -1493,70 +1679,19 @@ window.__ModuleLoader__.load({
                   d: `M ${px} ${py} C ${mid} ${py}, ${mid} ${cy}, ${cx} ${cy}`,
                 })
               }),
-              layout.entries.map(({ node }) => {
-                const isRoot = node === sheet.root
-                const cls = `mm-node${isRoot ? ' mm-node-root' : ''}${selected === node.id ? ' mm-node-sel' : ''}`
-                const textX = 14
-                const textY = node._h / 2 - ((node._lines.length - 1) * 18) / 2 + 5
-                return h(
-                  'g',
-                  {
-                    key: node.id,
-                    'data-mm-node': node.id,
-                    transform: `translate(${node._x},${node._y - node._h / 2})`,
-                    onClick: (event) => {
-                      event.stopPropagation()
-                      setSelected(node.id)
-                    },
-                    onDoubleClick: (event) => {
-                      event.stopPropagation()
-                      if (editable) setEditing({ id: node.id, value: node.text })
-                    },
-                    onContextMenu: (event) => {
-                      event.preventDefault()
-                      event.stopPropagation()
-                      setSelected(node.id)
-                      setMenu({ x: event.clientX, y: event.clientY, id: node.id })
-                    },
-                  },
-                  h('rect', { className: cls, width: node._w, height: node._h, rx: isRoot ? 12 : 10 }),
-                  node._lines.map((line, index) =>
-                    h(
-                      'text',
-                      {
-                        key: index,
-                        className: 'mm-label',
-                        x: textX,
-                        y: textY + index * 18,
-                        fontSize: isRoot ? 13.5 : 13,
-                        fontWeight: isRoot ? 600 : 400,
-                      },
-                      line,
-                    ),
-                  ),
-                  node.note ? h('circle', { cx: node._w - 9, cy: node._h - 9, r: 3, className: 'mm-node', fill: 'currentColor', opacity: 0.5 }) : null,
-                  node.children.length > 0
-                    ? h(
-                        'g',
-                        {
-                          className: 'mm-toggle',
-                          transform: `translate(${node._w},${node._h / 2})`,
-                          onClick: (event) => {
-                            event.stopPropagation()
-                            setSelected(node.id)
-                            toggleNode(node.id)
-                          },
-                        },
-                        h('circle', { r: 8, className: 'mm-toggle' }),
-                        h(
-                          'text',
-                          { className: 'mm-toggle-text', x: 0, y: 3.5, textAnchor: 'middle' },
-                          node.collapsed ? `+${countNodes({ children: node.children })}` : '−',
-                        ),
-                      )
-                    : null,
-                )
-              }),
+              layout.entries.map(({ node }) =>
+                h(MapNode, {
+                  key: node.id,
+                  node,
+                  isRoot: node === sheet.root,
+                  selected: selected === node.id,
+                  editable,
+                  onSelect: selectNode,
+                  onEdit: beginEdit,
+                  onMenu: openNodeMenu,
+                  onToggle: toggleNode,
+                }),
+              ),
             ),
           ),
           editing && inputStyle
