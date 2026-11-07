@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head><title>OPML demo</title></head>
+  <body>
+    <outline text="OPML demo">
+      <outline text="Editable in the sidebar" _note="Changes save back to disk.">
+        <outline text="Add child"/>
+        <outline text="Add sibling"/>
+      </outline>
+      <outline text="Same viewer as .mm"/>
+      <outline text="Export to FreeMind"/>
+    </outline>
+  </body>
+</opml>

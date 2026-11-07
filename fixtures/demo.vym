@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vymmap version="2.0">
+  <branch>
+    <heading>VYM demo</heading>
+    <branch><heading>VYM XML</heading>
+      <branch><heading>branch / heading</heading></branch>
+    </branch>
+    <branch><heading>Editable</heading></branch>
+    <branch><heading>Export to .mm</heading></branch>
+  </branch>
+</vymmap>

@@ -1,0 +1,59 @@
+{
+  "name": "@temptrip/dsh-mindmap",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open, edit and export XMind, FreeMind, OPML, KityMinder and VYM mind maps in the DeepSeek Harness right sidebar",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-api-workspace-files",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
+    }
+  },
+  "license": "MIT",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "mindmap",
+    "xmind",
+    "freemind",
+    "opml",
+    "vym",
+    "kityminder"
+  ],
+  "homepage": "https://github.com/LoongYun/dsh-mindmap#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LoongYun/dsh-mindmap.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LoongYun/dsh-mindmap/issues"
+  }
+}

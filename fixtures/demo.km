@@ -1,0 +1,13 @@
+{
+  "root": {
+    "data": { "text": "KityMinder demo", "note": "A KM file in the sidebar." },
+    "children": [
+      { "data": { "text": "JSON tree" }, "children": [
+        { "data": { "text": "data.text is the label" } },
+        { "data": { "text": "children is the tree" } }
+      ] },
+      { "data": { "text": "Editable and savable" } },
+      { "data": { "text": "Export to .mm" } }
+    ]
+  }
+}

@@ -1,0 +1,3 @@
+- insert:
+    - id: dsh-mindmap
+      name: '@temptrip/dsh-mindmap'
