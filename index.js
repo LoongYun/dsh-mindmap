@@ -5,7 +5,7 @@
  * map back to the workspace. The browser half cannot call `ctx.fs` directly,
  * so this plugin exposes one fenced JSON route:
  *
- *   POST /dsh-mindmap/save  { sessionId, path, content, baseVersion? }
+ *   POST /dsh-mindmap/save  { sessionId, path, content, baseVersion?, create? }
  *
  * The route enforces the connection fence, the session's workspace boundary,
  * the extension allow-list, the body size limit and an optimistic version
@@ -67,6 +67,7 @@ async function handleSave(ctx, req, res) {
   const relativePath = typeof body?.path === 'string' ? body.path : ''
   const content = typeof body?.content === 'string' ? body.content : ''
   const baseVersion = typeof body?.baseVersion === 'string' ? body.baseVersion : undefined
+  const create = body?.create === true
 
   if (sessionId === '' || relativePath === '' || content === '') {
     respond(res, 400, { ok: false, error: 'invalid-request' })
@@ -119,10 +120,15 @@ async function handleSave(ctx, req, res) {
 
   const info = await fs.stat(target).catch(() => undefined)
   if (info === undefined) {
-    respond(res, 404, { ok: false, error: 'file-not-found' })
+    if (!create) {
+      respond(res, 404, { ok: false, error: 'file-not-found' })
+      return
+    }
+  } else if (create && baseVersion === undefined) {
+    respond(res, 409, { ok: false, error: 'file-exists' })
     return
   }
-  if (baseVersion !== undefined && typeof info.version === 'string' && info.version !== baseVersion) {
+  if (info !== undefined && baseVersion !== undefined && typeof info.version === 'string' && info.version !== baseVersion) {
     respond(res, 409, { ok: false, error: 'version-conflict' })
     return
   }

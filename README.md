@@ -14,7 +14,9 @@ Open, edit and export mind maps in the [DeepSeek Harness](https://github.com/dee
 | `.km` (KityMinder) | ✅ | ✅ | ✅ |
 | `.vym` (VYM) | ✅ | ✅ | ✅ |
 
-For `.xmind`, the viewer reads either `content.json` (XMind Zen) or `content.xml` (XMind 8) and keeps the topic hierarchy, notes and collapse state. XMind themes, relationship lines, attachments and other advanced content are not rendered, and exporting to `.mm` keeps only the structure.
+For `.xmind`, the viewer reads either `content.json` (XMind Zen / XMind 8) or `content.xml` and keeps the topic hierarchy, notes and collapse state. XMind themes, relationship lines, attachments and other advanced content are not rendered, and exporting to `.mm` keeps only the structure.
+
+Because `.xmind` is read-only, the toolbar offers **Convert to editable .mm**: it writes a sibling `.mm` file (asking before overwriting) and opens it for editing.
 
 ## Install
 
@@ -36,9 +38,9 @@ There is no build step: DSH loads `client.js` directly as a browser module.
 - Right-click a topic for a context menu: new child, new sibling, rename, collapse and delete.
 - The `EN` / `中` button at the right edge of the toolbar switches the interface language. It defaults to Chinese.
 - `⌘Z` / `⇧⌘Z` undo and redo, `Space` collapses or expands, `Ctrl`/`⌘` + wheel zooms at the cursor, the wheel pans, drag to pan.
-- `⌘S` or the toolbar button saves. `.xmind` has no save button; use **Export to .mm**.
+- `⌘S` or the toolbar button saves. `.xmind` has no save button; use **Convert to editable .mm** (writes a sibling file) or **Export to .mm** (download).
 
-Saving only overwrites editable files that already exist. For new content, use **Export to .mm** — this is a deliberate safety boundary.
+Saving overwrites editable files that already exist. The `.xmind` conversion is the one path that creates a new file, and only next to the original `.xmind`; it never overwrites without confirmation.
 
 ## How it works
 

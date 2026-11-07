@@ -50,6 +50,11 @@ window.__ModuleLoader__.load({
         saved: '已保存',
         export: '导出为 .mm',
         exported: '已导出 .mm 文件',
+        convert: '转为可编辑 .mm',
+        convertExists: '「{name}」已存在，要覆盖它吗？',
+        convertConflict: '目标文件已在磁盘上变化，请重试',
+        converted: '已生成 {name}，可在新标签页中编辑',
+        convertFailed: '转换失败',
         saveFallback: '无法原地保存，已下载修改后的文件',
         saveFailed: '保存失败',
         versionConflict: '文件已在磁盘上变化，请重新打开后再保存',
@@ -92,6 +97,11 @@ window.__ModuleLoader__.load({
         saved: 'Saved',
         export: 'Export as .mm',
         exported: 'Exported .mm file',
+        convert: 'Convert to editable .mm',
+        convertExists: '“{name}” already exists. Overwrite it?',
+        convertConflict: 'The target file changed on disk; please retry',
+        converted: 'Created {name}; opening it for editing',
+        convertFailed: 'Conversion failed',
         saveFallback: 'Could not save in place; downloaded the edited file',
         saveFailed: 'Save failed',
         versionConflict: 'The file changed on disk; reopen it before saving',
@@ -160,6 +170,10 @@ window.__ModuleLoader__.load({
       const name = baseName(filePath)
       const dot = name.lastIndexOf('.')
       return dot > 0 ? name.slice(0, dot) : name
+    }
+
+    function addressOf(sessionId, filePath) {
+      return `${ADDRESS_PREFIX}session/${encodeURIComponent(sessionId)}/${filePath.split('/').map(encodeURIComponent).join('/')}`
     }
 
     // ------------------------------------------------------------------- text
@@ -510,7 +524,7 @@ window.__ModuleLoader__.load({
       const lines = ['<?xml version="1.0" encoding="UTF-8"?>', '<map version="1.0.1">']
       const emit = (node, depth) => {
         const attrs = [`TEXT="${escapeXml(node.text)}"`]
-        if (depth === 1) attrs.push(`POSITION="${node.side === 'left' ? 'left' : 'right'}"`)
+        if (depth === 1) attrs.push(`POSITION="${(node._side ?? node.side) === 'left' ? 'left' : 'right'}"`)
         if (node.collapsed && node.children.length > 0) attrs.push('FOLDED="true"')
         if (node.link) attrs.push(`LINK="${escapeXml(node.link)}"`)
         const hasBody = node.note || node.children.length > 0
@@ -776,6 +790,8 @@ window.__ModuleLoader__.load({
           return h('svg', common, h('path', { d: 'M5 4h11l3 3v13H5zM8 4v6h8V4M8 20v-6h8v6' }))
         case 'download':
           return h('svg', common, h('path', { d: 'M12 4v11M7 10l5 5 5-5M4 20h16' }))
+        case 'convert':
+          return h('svg', common, h('path', { d: 'M4 8h10l-3-3M20 16H10l3 3' }))
         case 'undo':
           return h('svg', common, h('path', { d: 'M9 7H5v4M5 11c2-5 7-6 11-3 3 2 4 6 2 9' }))
         case 'redo':
@@ -1176,6 +1192,61 @@ window.__ModuleLoader__.load({
         say(t('exported'))
       }, [doc, active, download, say, t])
 
+      const convertToEditable = useCallback(async () => {
+        if (!doc || doc.format !== 'xmind' || saving) return
+        const slash = doc.path.lastIndexOf('/')
+        const dir = slash >= 0 ? doc.path.slice(0, slash + 1) : ''
+        const targetPath = `${dir}${stemOf(doc.path)}.mm`
+        const targetName = baseName(targetPath)
+        let baseVersion
+        try {
+          const statOutcome = await ctx.remote.workspaceFiles.stat(doc.sessionId, targetPath)
+          if (statOutcome?.ok) {
+            baseVersion = statOutcome.value?.version
+            if (!window.confirm(t('convertExists').replace('{name}', targetName))) return
+          }
+        } catch {
+          /* treat as absent; the host route re-checks */
+        }
+        const content = serializeMm(doc.sheets[active])
+        setSaving(true)
+        try {
+          const response = await fetch('/dsh-mindmap/save', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: doc.sessionId,
+              path: targetPath,
+              content,
+              create: baseVersion === undefined,
+              baseVersion,
+            }),
+          })
+          if (response.status === 409) {
+            say(t('convertConflict'))
+            return
+          }
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({}))
+            if (response.status === 404 || response.status === 405 || response.status >= 500) {
+              download(content, targetName, 'application/xml')
+              say(t('saveFallback'))
+            } else {
+              say(`${t('convertFailed')} — ${payload.error ?? response.status}`)
+            }
+            return
+          }
+          say(t('converted').replace('{name}', targetName))
+          ctx.sidebarRight?.openResource?.(addressOf(doc.sessionId, targetPath))
+        } catch {
+          download(content, targetName, 'application/xml')
+          say(t('saveFallback'))
+        } finally {
+          setSaving(false)
+        }
+      }, [doc, active, saving, ctx, download, say, t])
+
       const save = useCallback(async () => {
         if (!doc || !EDITABLE.has(doc.format) || saving) return
         const content = serializeCurrent()
@@ -1365,6 +1436,8 @@ window.__ModuleLoader__.load({
               { className: 'mm-btn', title: t('save'), 'aria-label': t('save'), onClick: save, disabled: saving || !dirty },
               h(Icon, { name: 'save' }),
             ),
+          doc.format === 'xmind' &&
+            h('button', { className: 'mm-btn', title: t('convert'), 'aria-label': t('convert'), onClick: convertToEditable, disabled: saving }, h(Icon, { name: 'convert' })),
           h('button', { className: 'mm-btn', title: t('export'), 'aria-label': t('export'), onClick: exportMm }, h(Icon, { name: 'download' })),
           h('span', { className: 'mm-sep' }),
           h(
@@ -1566,7 +1639,7 @@ window.__ModuleLoader__.load({
     }
 
     return {
-      inject: ['sidebarRightTabs', 'slots', 'remote', 'remote.workspaceFiles', 'locale'],
+      inject: ['sidebarRightTabs', 'sidebarRight', 'slots', 'remote', 'remote.workspaceFiles', 'locale'],
       apply(ctx) {
         ctx.effect(() => ctx.locale.register(NS, DICTS), 'dsh-mindmap: dictionaries')
         ctx.effect(
