@@ -46,6 +46,32 @@ XMind 的主题样式、关系线、附件等高级内容不会渲染，导出 `
 
 保存只覆盖**已存在**的可编辑文件；`.xmind` 的转换是唯一会新建文件的路径，且只在原文件旁边创建，覆盖前必须确认。
 
+## Agent 工具
+
+这个 bundle 还注册了两个 Host 工具，让我可以直接“读结构、改结构”，不需要把整份 XML 搬进对话：
+
+- `mindmap_outline({ path, includeNotes?, maxDepth? })` 返回带稳定 id 的缩进大纲和文件版本：
+
+  ```text
+  [n1] DSH Mind Map
+    [n2] 支持的格式
+      [n3] XMind —— 只读预览
+  ```
+
+- `mindmap_apply({ path, baseVersion, ops })` 按节点 id 原子地应用修改。把 `mindmap_outline` 返回的版本传回来；文件已变化时不会写入，而是要求重新读取。
+
+  ```json
+  [
+    { "action": "add", "parent": "n2", "text": "新主题" },
+    { "action": "rename", "id": "n3", "text": "新标题" },
+    { "action": "move", "id": "n5", "parent": "n2", "index": 0 },
+    { "action": "remove", "id": "n11" }
+  ]
+  ```
+
+两个工具都接受工作区相对路径或绝对路径，并执行与保存路由相同的工作区包含校验。`.xmind` 可读不可写，需要先转为 `.mm`。
+查看器不会监听文件变化，agent 改完后关闭再打开 tab 即可看到结果。
+
 ## 实现
 
 - 浏览器半区注册原生 `sidebar.right.pane.tab` 类型，匹配模式是比 `dsh-resource://file/**` 更长的扩展名 glob，

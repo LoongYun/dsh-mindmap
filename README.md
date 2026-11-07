@@ -44,6 +44,31 @@ There is no build step: DSH loads `client.js` directly as a browser module.
 
 Saving overwrites editable files that already exist. The `.xmind` conversion is the one path that creates a new file, and only next to the original `.xmind`; it never overwrites without confirmation.
 
+## Agent tools
+
+The bundle also registers two host tools, so an agent can read and edit a map without moving raw XML through the conversation:
+
+- `mindmap_outline({ path, includeNotes?, maxDepth? })` returns an indented outline with stable ids and the file version:
+
+  ```text
+  [n1] DSH Mind Map
+    [n2] Formats
+      [n3] XMind — read-only preview
+  ```
+
+- `mindmap_apply({ path, baseVersion, ops })` applies node-level changes atomically. Pass the version from `mindmap_outline`; if the file changed, nothing is written and the tool asks for a re-read.
+
+  ```json
+  [
+    { "action": "add", "parent": "n2", "text": "New topic" },
+    { "action": "rename", "id": "n3", "text": "Renamed" },
+    { "action": "move", "id": "n5", "parent": "n2", "index": 0 },
+    { "action": "remove", "id": "n11" }
+  ]
+  ```
+
+Both tools resolve workspace-relative or absolute paths and enforce the same workspace containment as the save route. `.xmind` is readable but not writable; convert it to `.mm` first. The viewer does not watch the file, so close and reopen the tab to see an agent's edit.
+
 ## How it works
 
 - The client half registers a native `sidebar.right.pane.tab` type with an extension-priority address glob that is longer than `dsh-resource://file/**`, so it outranks `dsh-better-sidebar`'s editor for these extensions while still coexisting with it.

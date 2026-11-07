@@ -1,8 +1,8 @@
 {
   "name": "@loongyun/dsh-mindmap",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Open, edit and export XMind, FreeMind, OPML, KityMinder and VYM mind maps in the DeepSeek Harness right sidebar",
+  "description": "Open, edit and export XMind, FreeMind, OPML, KityMinder and VYM mind maps in the DeepSeek Harness right sidebar, with agent tools for reading and editing outlines",
   "type": "module",
   "main": "index.js",
   "exports": {
@@ -14,6 +14,7 @@
   },
   "files": [
     "index.js",
+    "lib",
     "client.js",
     "cordis.patch.yml",
     "locale/*.json",
