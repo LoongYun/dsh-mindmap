@@ -23,6 +23,8 @@ window.__ModuleLoader__.load({
     const EDITABLE = new Set(['mm', 'opml', 'km', 'vym'])
     const GAP_X = 64
     const GAP_Y = 18
+    const DOWN_GAP_X = 24
+    const DOWN_GAP_Y = 56
     const PAD = 48
     const MAX_LINES = 4
     const MAX_NODES = 20000
@@ -41,6 +43,17 @@ window.__ModuleLoader__.load({
         unsupported: '不支持的思维导图格式',
         readOnly: '只读',
         sheet: '画布',
+        structure: '结构',
+        structureRight: '向右',
+        structureBalanced: '双向',
+        structureDown: '向下',
+        structureLeft: '向左',
+        branch: '分支线',
+        branchCurve: '曲线',
+        branchStraight: '直线',
+        branchElbow: '折线',
+        format: '格式',
+        resetZoom: '恢复 100%',
         zoomIn: '放大',
         zoomOut: '缩小',
         fit: '适应窗口',
@@ -91,6 +104,17 @@ window.__ModuleLoader__.load({
         unsupported: 'Unsupported mind-map format',
         readOnly: 'Read-only',
         sheet: 'Sheet',
+        structure: 'Structure',
+        structureRight: 'Right',
+        structureBalanced: 'Balanced',
+        structureDown: 'Down',
+        structureLeft: 'Left',
+        branch: 'Branch line',
+        branchCurve: 'Curved',
+        branchStraight: 'Straight',
+        branchElbow: 'Elbow',
+        format: 'Format',
+        resetZoom: 'Reset to 100%',
         zoomIn: 'Zoom in',
         zoomOut: 'Zoom out',
         fit: 'Fit to window',
@@ -735,50 +759,87 @@ window.__ModuleLoader__.load({
       return out
     }
 
-    function layoutMap(root) {
+    function layoutMap(root, structure = 'balanced') {
       countTree(root)
       measureTree(root)
       const kids = root._visibleChildren
-      const explicit = kids.some((kid) => kid.side === 'left' || kid.side === 'right')
-      if (!explicit && kids.length > 1) {
-        let total = 0
-        for (const kid of kids) total += kid._sub + GAP_Y
-        let running = 0
-        for (const kid of kids) {
-          running += kid._sub + GAP_Y
-          kid.side = running <= total / 2 + GAP_Y / 2 ? 'left' : 'right'
-        }
-      }
-      root._x = -root._w / 2
-      root._y = 0
-      root._side = 'right'
 
-      const place = (node, side, parent, cursor) => {
-        node._side = side
-        node._x = side === 'right' ? parent._x + parent._w + GAP_X : parent._x - GAP_X - node._w
-        let y
-        if (node._visibleChildren.length === 0) {
-          y = cursor + node._h / 2
-        } else {
-          let running = cursor
+      if (structure === 'down') {
+        const measureDown = (node) => {
+          let childWidth = 0
+          let childHeight = 0
           for (const child of node._visibleChildren) {
-            place(child, side, node, running)
-            running += child._sub + GAP_Y
+            measureDown(child)
+            childWidth += child._dw
           }
-          y = (node._visibleChildren[0]._y + node._visibleChildren[node._visibleChildren.length - 1]._y) / 2
+          if (node._visibleChildren.length > 0) childWidth += DOWN_GAP_X * (node._visibleChildren.length - 1)
+          for (const child of node._visibleChildren) childHeight = Math.max(childHeight, child._dh)
+          node._dw = Math.max(node._w, childWidth)
+          node._dh = node._h + (node._visibleChildren.length > 0 ? DOWN_GAP_Y + childHeight : 0)
         }
-        node._y = y
-      }
+        const placeDown = (node, left, top) => {
+          const children = node._visibleChildren
+          node._x = left + (node._dw - node._w) / 2
+          node._y = top + node._h / 2
+          delete node._side
+          if (children.length === 0) return
+          let total = 0
+          for (const child of children) total += child._dw
+          total += DOWN_GAP_X * (children.length - 1)
+          let cursor = left + (node._dw - total) / 2
+          for (const child of children) {
+            placeDown(child, cursor, top + node._h + DOWN_GAP_Y)
+            cursor += child._dw + DOWN_GAP_X
+          }
+        }
+        measureDown(root)
+        placeDown(root, 0, 0)
+      } else {
+        if (structure === 'balanced') {
+          const explicit = kids.some((kid) => kid.side === 'left' || kid.side === 'right')
+          if (!explicit && kids.length > 1) {
+            let total = 0
+            for (const kid of kids) total += kid._sub + GAP_Y
+            let running = 0
+            for (const kid of kids) {
+              running += kid._sub + GAP_Y
+              kid.side = running <= total / 2 + GAP_Y / 2 ? 'left' : 'right'
+            }
+          }
+        }
+        root._x = -root._w / 2
+        root._y = 0
+        root._side = 'right'
 
-      for (const side of ['left', 'right']) {
-        const sideKids = kids.filter((kid) => (kid.side === 'left' ? 'left' : 'right') === side)
-        let total = 0
-        for (const kid of sideKids) total += kid._sub + GAP_Y
-        total = Math.max(0, total - GAP_Y)
-        let cursor = -total / 2
-        for (const kid of sideKids) {
-          place(kid, side, root, cursor)
-          cursor += kid._sub + GAP_Y
+        const place = (node, side, parent, cursor) => {
+          node._side = side
+          node._x = side === 'right' ? parent._x + parent._w + GAP_X : parent._x - GAP_X - node._w
+          let y
+          if (node._visibleChildren.length === 0) {
+            y = cursor + node._h / 2
+          } else {
+            let running = cursor
+            for (const child of node._visibleChildren) {
+              place(child, side, node, running)
+              running += child._sub + GAP_Y
+            }
+            y = (node._visibleChildren[0]._y + node._visibleChildren[node._visibleChildren.length - 1]._y) / 2
+          }
+          node._y = y
+        }
+
+        const sides = structure === 'right' || structure === 'left' ? [structure] : ['left', 'right']
+        for (const side of sides) {
+          const sideKids =
+            structure === 'balanced' ? kids.filter((kid) => (kid.side === 'left' ? 'left' : 'right') === side) : kids
+          let total = 0
+          for (const kid of sideKids) total += kid._sub + GAP_Y
+          total = Math.max(0, total - GAP_Y)
+          let cursor = -total / 2
+          for (const kid of sideKids) {
+            place(kid, side, root, cursor)
+            cursor += kid._sub + GAP_Y
+          }
         }
       }
 
@@ -820,6 +881,19 @@ window.__ModuleLoader__.load({
 .mm-btn[data-active="true"] { background: var(--mm-hover, rgba(127,127,127,.16)); }
 .mm-lang { width: auto; min-width: 28px; padding: 0 5px; font-size: 11px; font-weight: 650; letter-spacing: .02em; }
 .mm-sep { width: 1px; height: 18px; background: var(--mm-line, rgba(127,127,127,.22)); margin: 0 4px; }
+.mm-dock { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 1px; padding: 5px 6px; border-radius: 13px; background: rgba(127,127,127,.10); border: 1px solid rgba(127,127,127,.16); box-shadow: 0 10px 30px rgba(15,23,42,.16); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%); z-index: 5; white-space: nowrap; }
+.mm-dock .mm-btn { width: 30px; height: 30px; opacity: .78; }
+.mm-dock .mm-sep { margin: 0 3px; }
+.mm-zoom { width: auto !important; min-width: 44px; padding: 0 4px; font-size: 11px; font-variant-numeric: tabular-nums; letter-spacing: .01em; opacity: .7 !important; }
+.mm-format-panel { position: absolute; bottom: calc(100% + 9px); left: 50%; transform: translateX(-50%); width: 300px; max-width: calc(100vw - 32px); padding: 13px 13px 11px; border-radius: 14px; background: rgba(127,127,127,.10); border: 1px solid rgba(127,127,127,.16); box-shadow: 0 18px 46px rgba(15,23,42,.22); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); text-align: left; }
+.mm-format-title { margin: 1px 2px 8px; font-size: 11px; font-weight: 650; letter-spacing: .02em; opacity: .55; }
+.mm-format-title + .mm-format-grid { margin-bottom: 13px; }
+.mm-format-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.mm-format-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.mm-format-option { display: flex; align-items: center; justify-content: center; height: 46px; padding: 0; border: 0; border-radius: 9px; background: transparent; color: inherit; cursor: pointer; opacity: .62; }
+.mm-format-option:hover { background: rgba(127,127,127,.14); opacity: .95; }
+.mm-format-option[data-active="true"] { background: rgba(59,130,246,.16); color: #3b82f6; opacity: 1; }
+
 .mm-spacer { flex: 1; }
 .mm-select { height: 28px; max-width: 170px; border: 1px solid var(--mm-line, rgba(127,127,127,.28)); border-radius: 7px; background: var(--mm-surface, transparent); color: inherit; font: inherit; font-size: 12px; }
 .mm-badge { font-size: 11px; opacity: .62; white-space: nowrap; }
@@ -835,7 +909,7 @@ window.__ModuleLoader__.load({
 .mm-toggle { fill: var(--mm-toggle, rgba(127,127,127,.9)); stroke: var(--mm-surface, transparent); stroke-width: 2; cursor: pointer; }
 .mm-toggle-text { fill: #fff; font: 600 9px -apple-system, sans-serif; pointer-events: none; }
 .mm-input { position: absolute; box-sizing: border-box; padding: 6px 10px; border: 2px solid #3b82f6; border-radius: 9px; background: var(--mm-input, #fff); color: #111827; outline: none; font-family: inherit; z-index: 3; }
-.mm-status { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); max-width: 90%; padding: 6px 12px; border-radius: 8px; background: rgba(17,24,39,.9); color: #f9fafb; font-size: 12px; z-index: 4; pointer-events: none; }
+.mm-status { position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%); max-width: 90%; padding: 6px 12px; border-radius: 8px; background: rgba(17,24,39,.9); color: #f9fafb; font-size: 12px; z-index: 4; pointer-events: none; }
 .mm-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; height: 100%; padding: 24px; text-align: center; font-size: 13px; opacity: .8; }
 .mm-center strong { font-size: 14px; opacity: 1; }
 .mm-center pre { max-width: 100%; overflow: auto; font-size: 11px; text-align: left; opacity: .7; }
@@ -880,8 +954,58 @@ window.__ModuleLoader__.load({
           return h('svg', common, h('circle', { cx: 10.5, cy: 10.5, r: 6.5 }), h('path', { d: 'M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6' }))
         case 'zoomOut':
           return h('svg', common, h('circle', { cx: 10.5, cy: 10.5, r: 6.5 }), h('path', { d: 'M15.5 15.5L21 21M7.5 10.5h6' }))
+        case 'structureRight':
+          return h('svg', common, h('rect', { x: 3, y: 9, width: 5, height: 6, rx: 1.5 }), h('path', { d: 'M8 12h3M11 12V6h7M11 12v6h7' }))
+        case 'structureLeft':
+          return h('svg', common, h('rect', { x: 16, y: 9, width: 5, height: 6, rx: 1.5 }), h('path', { d: 'M16 12h-3M13 12V6H6M13 12v6H6' }))
+        case 'structureBalanced':
+          return h(
+            'svg',
+            common,
+            h('rect', { x: 9, y: 9, width: 6, height: 6, rx: 1.5 }),
+            h('path', { d: 'M9 12H3M15 12h6M3 12V6h3M3 12v6h3M21 12V6h-3M21 12v6h-3' }),
+          )
+        case 'structureDown':
+          return h(
+            'svg',
+            common,
+            h('rect', { x: 9, y: 2.5, width: 6, height: 5, rx: 1.5 }),
+            h('path', { d: 'M12 7.5V12M3 12h18M3 12v4M12 12v4M21 12v4' }),
+          )
+        case 'branchCurve':
+          return h('svg', common, h('path', { d: 'M4 6c8 0 8 12 16 12' }))
+        case 'branchStraight':
+          return h('svg', common, h('path', { d: 'M4 6l16 12' }))
+        case 'branchElbow':
+          return h('svg', common, h('path', { d: 'M4 6h8v12h8' }))
+        case 'format':
+          return h(
+            'svg',
+            common,
+            h('path', { d: 'M4 7h6M14 7h6M4 12h3M11 12h9M4 17h11M19 17h1' }),
+            h('circle', { cx: 12, cy: 7, r: 2 }),
+            h('circle', { cx: 9, cy: 12, r: 2 }),
+            h('circle', { cx: 17, cy: 17, r: 2 }),
+          )
         default:
           return null
+      }
+    }
+
+    function storedChoice(key, allowed, fallback) {
+      try {
+        const value = localStorage.getItem(key)
+        return allowed.includes(value) ? value : fallback
+      } catch {
+        return fallback
+      }
+    }
+
+    function storeChoice(key, value) {
+      try {
+        localStorage.setItem(key, value)
+      } catch {
+        /* storage may be unavailable */
       }
     }
 
@@ -970,12 +1094,16 @@ window.__ModuleLoader__.load({
       const [selected, setSelected] = useState(undefined)
       const [editing, setEditing] = useState(undefined)
       const [menu, setMenu] = useState(undefined)
+      const [formatOpen, setFormatOpen] = useState(false)
+      const [structure, setStructure] = useState(() => storedChoice('dsh-mindmap:structure', ['right', 'balanced', 'down', 'left'], 'balanced'))
+      const [branch, setBranch] = useState(() => storedChoice('dsh-mindmap:branch', ['curve', 'straight', 'elbow'], 'curve'))
       const [view, setView] = useState({ x: 0, y: 0, k: 1 })
       const [toast, setToast] = useState('')
       const [saving, setSaving] = useState(false)
       const [needsFit, setNeedsFit] = useState(true)
       const [size, setSize] = useState({ width: 800, height: 600 })
       const stageRef = useRef(null)
+      const dockRef = useRef(null)
       const contentRef = useRef(null)
       const viewRef = useRef({ x: 0, y: 0, k: 1 })
       const wheelRef = useRef({ frame: 0, data: undefined })
@@ -1066,7 +1194,7 @@ window.__ModuleLoader__.load({
       }, [view])
 
       const sheet = doc?.sheets?.[active]
-      const layout = useMemo(() => (sheet ? layoutMap(sheet.root) : undefined), [sheet])
+      const layout = useMemo(() => (sheet ? layoutMap(sheet.root, structure) : undefined), [sheet, structure])
 
       const fit = useCallback(() => {
         const stage = stageRef.current
@@ -1502,6 +1630,31 @@ window.__ModuleLoader__.load({
         contentRef.current?.setAttribute('transform', `translate(${next.x},${next.y}) scale(${next.k})`)
       }
       const selectNode = useCallback((id) => setSelected(id), [])
+      const chooseStructure = useCallback((value) => {
+        setStructure(value)
+        setNeedsFit(true)
+        storeChoice('dsh-mindmap:structure', value)
+      }, [])
+      const chooseBranch = useCallback((value) => {
+        setBranch(value)
+        storeChoice('dsh-mindmap:branch', value)
+      }, [])
+
+      useEffect(() => {
+        if (!formatOpen) return undefined
+        const onPointerDown = (event) => {
+          if (!dockRef.current?.contains(event.target)) setFormatOpen(false)
+        }
+        const onKeyDown = (event) => {
+          if (event.key === 'Escape') setFormatOpen(false)
+        }
+        document.addEventListener('pointerdown', onPointerDown, true)
+        document.addEventListener('keydown', onKeyDown)
+        return () => {
+          document.removeEventListener('pointerdown', onPointerDown, true)
+          document.removeEventListener('keydown', onKeyDown)
+        }
+      }, [formatOpen])
       const beginEdit = useCallback((id, value) => setEditing({ id, value }), [])
       const openNodeMenu = useCallback((id, x, y) => {
         setSelected(id)
@@ -1576,27 +1729,6 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'mm-toolbar' },
-          editable &&
-            h(
-              React.Fragment,
-              null,
-              h('button', { className: 'mm-btn', title: t('undo'), 'aria-label': t('undo'), onClick: undo, disabled: history.past.length === 0 }, h(Icon, { name: 'undo' })),
-              h('button', { className: 'mm-btn', title: t('redo'), 'aria-label': t('redo'), onClick: redo, disabled: history.future.length === 0 }, h(Icon, { name: 'redo' })),
-              h('span', { className: 'mm-sep' }),
-            ),
-          h(
-            'button',
-            {
-              className: 'mm-btn',
-              title: anyExpanded ? t('collapseAll') : t('expandAll'),
-              'aria-label': anyExpanded ? t('collapseAll') : t('expandAll'),
-              onClick: toggleAll,
-            },
-            h(Icon, { name: anyExpanded ? 'collapseAll' : 'expandAll' }),
-          ),
-          h('button', { className: 'mm-btn', title: t('zoomOut'), 'aria-label': t('zoomOut'), onClick: () => zoomCenter(1 / 1.2) }, h(Icon, { name: 'zoomOut' })),
-          h('button', { className: 'mm-btn', title: t('zoomIn'), 'aria-label': t('zoomIn'), onClick: () => zoomCenter(1.2) }, h(Icon, { name: 'zoomIn' })),
-          h('button', { className: 'mm-btn', title: t('fit'), 'aria-label': t('fit'), onClick: fit }, h(Icon, { name: 'fit' })),
           doc.sheets.length > 1 &&
             h(
               'select',
@@ -1667,17 +1799,28 @@ window.__ModuleLoader__.load({
               layout.entries.map(({ node, parent }) => {
                 if (!parent) return null
                 const p = parent
-                const right = (node._side ?? node.side ?? 'right') !== 'left'
-                const px = right ? p._x + p._w : p._x
-                const cx = right ? node._x : node._x + node._w
-                const py = p._y
-                const cy = node._y
-                const mid = (px + cx) / 2
-                return h('path', {
-                  key: `e-${node.id}`,
-                  className: 'mm-edge',
-                  d: `M ${px} ${py} C ${mid} ${py}, ${mid} ${cy}, ${cx} ${cy}`,
-                })
+                let d
+                if (structure === 'down') {
+                  const px = p._x + p._w / 2
+                  const py = p._y + p._h / 2
+                  const cx = node._x + node._w / 2
+                  const cy = node._y - node._h / 2
+                  const mid = (py + cy) / 2
+                  if (branch === 'straight') d = `M ${px} ${py} L ${cx} ${cy}`
+                  else if (branch === 'elbow') d = `M ${px} ${py} V ${mid} H ${cx} V ${cy}`
+                  else d = `M ${px} ${py} C ${px} ${mid}, ${cx} ${mid}, ${cx} ${cy}`
+                } else {
+                  const right = (node._side ?? node.side ?? 'right') !== 'left'
+                  const px = right ? p._x + p._w : p._x
+                  const cx = right ? node._x : node._x + node._w
+                  const py = p._y
+                  const cy = node._y
+                  const mid = (px + cx) / 2
+                  if (branch === 'straight') d = `M ${px} ${py} L ${cx} ${cy}`
+                  else if (branch === 'elbow') d = `M ${px} ${py} H ${mid} V ${cy} H ${cx}`
+                  else d = `M ${px} ${py} C ${mid} ${py}, ${mid} ${cy}, ${cx} ${cy}`
+                }
+                return h('path', { key: `e-${node.id}`, className: 'mm-edge', d })
               }),
               layout.entries.map(({ node }) =>
                 h(MapNode, {
@@ -1693,6 +1836,116 @@ window.__ModuleLoader__.load({
                 }),
               ),
             ),
+          ),
+          h(
+            'div',
+            {
+              className: 'mm-dock',
+              ref: dockRef,
+              onPointerDown: (event) => event.stopPropagation(),
+              onDoubleClick: (event) => event.stopPropagation(),
+            },
+            editable &&
+              h('button', { type: 'button', className: 'mm-btn', title: t('undo'), 'aria-label': t('undo'), onClick: undo, disabled: history.past.length === 0 }, h(Icon, { name: 'undo' })),
+            editable &&
+              h('button', { type: 'button', className: 'mm-btn', title: t('redo'), 'aria-label': t('redo'), onClick: redo, disabled: history.future.length === 0 }, h(Icon, { name: 'redo' })),
+            editable && h('span', { className: 'mm-sep' }),
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'mm-btn',
+                title: anyExpanded ? t('collapseAll') : t('expandAll'),
+                'aria-label': anyExpanded ? t('collapseAll') : t('expandAll'),
+                onClick: toggleAll,
+              },
+              h(Icon, { name: anyExpanded ? 'collapseAll' : 'expandAll' }),
+            ),
+            h('span', { className: 'mm-sep' }),
+            h('button', { type: 'button', className: 'mm-btn', title: t('zoomOut'), 'aria-label': t('zoomOut'), onClick: () => zoomCenter(1 / 1.2) }, h(Icon, { name: 'zoomOut' })),
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'mm-btn mm-zoom',
+                title: t('resetZoom'),
+                'aria-label': t('resetZoom'),
+                onClick: () => zoomCenter(1 / view.k),
+              },
+              `${Math.round(view.k * 100)}%`,
+            ),
+            h('button', { type: 'button', className: 'mm-btn', title: t('zoomIn'), 'aria-label': t('zoomIn'), onClick: () => zoomCenter(1.2) }, h(Icon, { name: 'zoomIn' })),
+            h('button', { type: 'button', className: 'mm-btn', title: t('fit'), 'aria-label': t('fit'), onClick: fit }, h(Icon, { name: 'fit' })),
+            h('span', { className: 'mm-sep' }),
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'mm-btn',
+                title: t('format'),
+                'aria-label': t('format'),
+                'aria-expanded': formatOpen,
+                'data-active': formatOpen,
+                onClick: () => setFormatOpen((open) => !open),
+              },
+              h(Icon, { name: 'format' }),
+            ),
+            formatOpen &&
+              h(
+                'div',
+                { className: 'mm-format-panel', role: 'dialog', 'aria-label': t('format') },
+                h('div', { className: 'mm-format-title' }, t('structure')),
+                h(
+                  'div',
+                  { className: 'mm-format-grid' },
+                  [
+                    ['right', 'structureRight'],
+                    ['balanced', 'structureBalanced'],
+                    ['down', 'structureDown'],
+                    ['left', 'structureLeft'],
+                  ].map(([value, label]) =>
+                    h(
+                      'button',
+                      {
+                        key: value,
+                        type: 'button',
+                        className: 'mm-format-option',
+                        'data-active': structure === value,
+                        title: t(label),
+                        'aria-label': t(label),
+                        'aria-pressed': structure === value,
+                        onClick: () => chooseStructure(value),
+                      },
+                      h(Icon, { name: label, size: 22 }),
+                    ),
+                  ),
+                ),
+                h('div', { className: 'mm-format-title' }, t('branch')),
+                h(
+                  'div',
+                  { className: 'mm-format-grid mm-format-grid-3' },
+                  [
+                    ['curve', 'branchCurve'],
+                    ['straight', 'branchStraight'],
+                    ['elbow', 'branchElbow'],
+                  ].map(([value, label]) =>
+                    h(
+                      'button',
+                      {
+                        key: value,
+                        type: 'button',
+                        className: 'mm-format-option',
+                        'data-active': branch === value,
+                        title: t(label),
+                        'aria-label': t(label),
+                        'aria-pressed': branch === value,
+                        onClick: () => chooseBranch(value),
+                      },
+                      h(Icon, { name: label, size: 22 }),
+                    ),
+                  ),
+                ),
+              ),
           ),
           editing && inputStyle
             ? h('input', {

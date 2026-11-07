@@ -36,7 +36,9 @@ There is no build step: DSH loads `client.js` directly as a browser module.
 - Click a `.mm`, `.opml`, `.km`, `.vym` or `.xmind` file in the workspace file tree to open it in the right sidebar.
 - Double-click a topic to rename it. `Tab` adds a child, `Enter` adds a sibling, `F2` renames, `Delete` deletes.
 - Right-click a topic for a context menu: new child, new sibling, rename, collapse and delete.
-- The `EN` / `中` button at the right edge of the toolbar switches the interface language. It defaults to Chinese.
+- The floating dock at the bottom holds undo/redo, collapse-all, zoom out / percentage / zoom in, fit, and the format button.
+- The format panel offers four structures (right, balanced, down, left) and three branch-line styles (curved, straight, elbow). These are view preferences, not written into the file.
+- The `EN` / `中` button at the right edge of the top toolbar switches the interface language. It defaults to Chinese.
 - `⌘Z` / `⇧⌘Z` undo and redo, `Space` collapses or expands, `Ctrl`/`⌘` + wheel zooms at the cursor, the wheel pans, drag to pan.
 - `⌘S` or the toolbar button saves. `.xmind` has no save button; use **Convert to editable .mm** (writes a sibling file) or **Export to .mm** (download).
 
