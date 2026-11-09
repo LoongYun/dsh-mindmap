@@ -1,0 +1,21 @@
+README.md
+  s_c5add4206fcec9::t_db8dc89ae22720 30
+README.zh-CN.md
+  s_c5add4206fcec9::t_db8dc89ae22720 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "b969d34688c28687d17156b75529fb4f5228f572",
+  "prompts": {},
+  "sessions": {
+    "s_c5add4206fcec9": {
+      "agent_id": {
+        "tool": "deepseekharness",
+        "id": "session-da1aee4f-1d5b-4086-bc64-e5f8e009230b",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "YunLong <yunlongjiang@trip.com>"
+    }
+  }
+}
