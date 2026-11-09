@@ -20,6 +20,26 @@ Because `.xmind` is read-only, the viewer offers **Convert to editable .mm**: it
 
 ## Install
 
+### From npm (recommended)
+
+Open **Plugins** in DSH, choose **Add plugin** (some builds label it **Install bundle**), and enter:
+
+```text
+@jeffreylong/dsh-mindmap
+```
+
+Choose **Enable now**, then reload the Harness window.
+
+From a terminal you can install the package into a profile with:
+
+```bash
+dsh plugin --profile desktop add @jeffreylong/dsh-mindmap
+```
+
+and enable `dsh-mindmap` on the Plugins page.
+
+### From source
+
 1. Clone this repository:
 
    ```bash
@@ -27,7 +47,7 @@ Because `.xmind` is read-only, the viewer offers **Convert to editable .mm**: it
    ```
 
 2. In DSH, open **Plugins** → **Install bundle** and point it at the cloned directory. You can also ask an agent to call `plugin_manager install_bundle` with that path.
-3. Reload the Harness window. If clicking a `.mm` file still opens the editor instead of this viewer, restart DSH once — the client injection list is read at startup. The save route and both agent tools live in the Host process, so restart DSH after installing or updating the bundle.
+3. Reload the Harness window. If clicking a `.mm` file still opens the editor instead of this viewer, restart DSH once - the client injection list is read at startup. The save route and both agent tools live in the Host process, so restart DSH after installing or updating the bundle.
 
 There is no build step: DSH loads `client.js` directly as a browser module.
 

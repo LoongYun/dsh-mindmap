@@ -21,6 +21,26 @@ XMind 的主题样式、关系线、附件等高级内容不会渲染，导出 `
 
 ## 安装
 
+### 从 npm 安装（推荐）
+
+在 DSH 中打开 **插件（Plugins）**，点击 **添加插件（Add plugin）**（部分版本叫 **安装 bundle**），输入：
+
+```text
+@jeffreylong/dsh-mindmap
+```
+
+点击 **立即启用（Enable now）**，然后刷新 Harness 窗口。
+
+也可以在终端把包装进 profile：
+
+```bash
+dsh plugin --profile desktop add @jeffreylong/dsh-mindmap
+```
+
+然后在插件页启用 `dsh-mindmap`。
+
+### 从源码安装
+
 1. 克隆本仓库：
 
    ```bash
