@@ -1,0 +1,31 @@
+README.md
+  s_c5add4206fcec9::t_4e0975630ca4ea 28,36
+  s_c5add4206fcec9::t_1c6630dddca330 23-27,29-35,37-42,50
+client.js
+  s_c5add4206fcec9::t_4e0975630ca4ea 11,18-19
+README.zh-CN.md
+  s_c5add4206fcec9::t_4e0975630ca4ea 29,37
+  s_c5add4206fcec9::t_1c6630dddca330 24-28,30-36,38-43
+cordis.patch.yml
+  s_c5add4206fcec9::t_4e0975630ca4ea 3
+package.json
+  s_c5add4206fcec9::t_b5ccb24fb9a1cd 5,65-67
+  s_c5add4206fcec9::t_4e0975630ca4ea 2
+  s_c5add4206fcec9::t_4de40d4ec106e0 24,63-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "655c5daedd3f459ffb9cce1dd9f22c42c4a0d014",
+  "prompts": {},
+  "sessions": {
+    "s_c5add4206fcec9": {
+      "agent_id": {
+        "tool": "deepseekharness",
+        "id": "session-da1aee4f-1d5b-4086-bc64-e5f8e009230b",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": null
+    }
+  }
+}
