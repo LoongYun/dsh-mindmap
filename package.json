@@ -21,7 +21,8 @@
     "icon.svg",
     "README.md",
     "README.zh-CN.md",
-    "LICENSE"
+    "LICENSE",
+    "test"
   ],
   "dsh": {
     "bundle": {
@@ -58,5 +59,8 @@
   },
   "bugs": {
     "url": "https://github.com/LoongYun/dsh-mindmap/issues"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
   }
 }

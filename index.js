@@ -281,7 +281,7 @@ const OUTLINE_OUTPUT = {
     return [
       {
         type: 'text',
-        text: `${value.outline}\n\nformat: ${value.format} (${mode})\nversion: ${value.version}`,
+        text: `${value.outline}\n\ntopics: ${value.count}\nformat: ${value.format} (${mode})\nversion: ${value.version}`,
       },
     ]
   },
@@ -306,7 +306,7 @@ const APPLY_OUTPUT = {
     return [
       {
         type: 'text',
-        text: `${value.outline}\n\nversion: ${value.version}${created}`,
+        text: `${value.outline}\n\ntopics: ${value.count}\nversion: ${value.version}${created}`,
       },
     ]
   },
