@@ -880,13 +880,15 @@ window.__ModuleLoader__.load({
 .mm-btn:hover:not(:disabled) { background: var(--mm-hover, rgba(127,127,127,.16)); opacity: 1; }
 .mm-btn:disabled { opacity: .32; cursor: default; }
 .mm-btn[data-active="true"] { background: var(--mm-hover, rgba(127,127,127,.16)); }
-.mm-lang { width: auto; min-width: 28px; padding: 0 5px; font-size: 11px; font-weight: 650; letter-spacing: .02em; }
+.mm-corner { position: absolute; left: 12px; bottom: 12px; z-index: 4; display: flex; align-items: center; gap: 6px; }
+.mm-corner-lang { height: 20px; min-width: 26px; padding: 0 6px; border: 1px solid rgba(127,127,127,.22); border-radius: 6px; background: transparent; color: inherit; font: inherit; font-size: 10px; font-weight: 650; letter-spacing: .02em; opacity: .6; cursor: pointer; }
+.mm-corner-lang:hover { opacity: .95; background: rgba(127,127,127,.12); }
 .mm-sep { width: 1px; height: 18px; background: var(--mm-line, rgba(127,127,127,.22)); margin: 0 4px; }
-.mm-dock { position: absolute; right: 12px; bottom: 12px; box-sizing: border-box; width: fit-content; max-width: calc(100% - 96px); display: flex; flex-direction: column; gap: 3px; padding: 5px 6px 4px; border-radius: 14px; background: rgba(127,127,127,.10); border: 1px solid rgba(127,127,127,.16); box-shadow: 0 10px 30px rgba(15,23,42,.16); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%); z-index: 5; }
+.mm-dock { position: absolute; right: 12px; bottom: 12px; box-sizing: border-box; width: fit-content; max-width: calc(100% - 112px); display: flex; flex-direction: column; gap: 3px; padding: 5px 6px 4px; border-radius: 14px; background: rgba(127,127,127,.10); border: 1px solid rgba(127,127,127,.16); box-shadow: 0 10px 30px rgba(15,23,42,.16); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%); z-index: 5; }
 .mm-dock-main { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 1px; }
 .mm-dock-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 3px 0; border-top: 1px solid rgba(127,127,127,.14); font-size: 11px; }
 .mm-dock-stats { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; }
-.mm-count { position: absolute; left: 12px; bottom: 16px; z-index: 4; font-size: 11px; opacity: .55; white-space: nowrap; pointer-events: none; }
+.mm-count { font-size: 11px; opacity: .55; white-space: nowrap; pointer-events: none; }
 .mm-unsaved { font-size: 11px; opacity: .62; }
 .mm-dock .mm-btn { width: 30px; height: 30px; opacity: .78; }
 .mm-dock .mm-sep { margin: 0 3px; }
@@ -1946,38 +1948,43 @@ window.__ModuleLoader__.load({
                   ),
                 ),
             ),
+            (!editable || dirty) &&
+              h(
+                'div',
+                { className: 'mm-dock-meta' },
+                h(
+                  'span',
+                  { className: 'mm-dock-stats' },
+                  !editable && h('span', { className: 'mm-badge' }, t('readOnly')),
+                  dirty && h('span', { className: 'mm-dirty', title: t('dirty') }),
+                  dirty && h('span', { className: 'mm-unsaved' }, t('unsaved')),
+                ),
+              ),
+          ),
+          h(
+            'div',
+            { className: 'mm-corner' },
+            h('span', { className: 'mm-count' }, t('stats').replace('{nodes}', String(sheet?.root?._count ?? layout.count))),
             h(
-              'div',
-              { className: 'mm-dock-meta' },
-              h(
-                'span',
-                { className: 'mm-dock-stats' },
-                !editable && h('span', { className: 'mm-badge' }, t('readOnly')),
-                dirty && h('span', { className: 'mm-dirty', title: t('dirty') }),
-                dirty && h('span', { className: 'mm-unsaved' }, t('unsaved')),
-              ),
-              h(
-                'button',
-                {
-                  type: 'button',
-                  className: 'mm-btn mm-lang',
-                  title: lang === 'zh' ? t('toEnglish') : t('toChinese'),
-                  'aria-label': lang === 'zh' ? t('toEnglish') : t('toChinese'),
-                  onClick: () => {
-                    const next = lang === 'zh' ? 'en' : 'zh'
-                    setLang(next)
-                    try {
-                      localStorage.setItem('dsh-mindmap:lang', next)
-                    } catch {
-                      /* storage may be unavailable */
-                    }
-                  },
+              'button',
+              {
+                type: 'button',
+                className: 'mm-corner-lang',
+                title: lang === 'zh' ? t('toEnglish') : t('toChinese'),
+                'aria-label': lang === 'zh' ? t('toEnglish') : t('toChinese'),
+                onClick: () => {
+                  const next = lang === 'zh' ? 'en' : 'zh'
+                  setLang(next)
+                  try {
+                    localStorage.setItem('dsh-mindmap:lang', next)
+                  } catch {
+                    /* storage may be unavailable */
+                  }
                 },
-                lang === 'zh' ? 'EN' : '中',
-              ),
+              },
+              lang === 'zh' ? 'EN' : '中',
             ),
           ),
-          h('div', { className: 'mm-count' }, t('stats').replace('{nodes}', String(sheet?.root?._count ?? layout.count))),
           editing && inputStyle
             ? h('input', {
                 className: 'mm-input',
