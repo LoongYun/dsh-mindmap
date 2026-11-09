@@ -69,7 +69,7 @@ XMind 的主题样式、关系线、附件等高级内容不会渲染，导出 `
   ]
   ```
 
-两个工具都接受工作区相对路径或绝对路径，并执行与保存路由相同的工作区包含校验。`.xmind` 可读不可写，需要先转为 `.mm`。
+两个工具都接受工作区相对路径或绝对路径。写入由会话的 sandbox 策略裁决：`workspace-write` 只能写会话工作区，full access 不受此限。`.xmind` 可读不可写，需要先转为 `.mm`。
 查看器不会监听文件变化，agent 改完后关闭再打开 tab 即可看到结果。
 
 ## 实现
@@ -78,8 +78,8 @@ XMind 的主题样式、关系线、附件等高级内容不会渲染，导出 `
   优先级 `extension`，因此可以和 `dsh-better-sidebar` 的 `editor` 共存并优先接管这几种文件。
 - 文件通过 `ctx.remote.workspaceFiles.readBytes` 读取。
 - 渲染是手写 SVG，没有第三方渲染器，也没有打包步骤。
-- 保存走 Host 路由 `POST /dsh-mindmap/save`：连接 fence、工作区包含校验、扩展名白名单、
-  8 MiB 上限、乐观版本冲突检测（`409`）。路由不可达时退化为下载文件。
+- 保存走 Host 路由 `POST /dsh-mindmap/save`：连接 fence、扩展名白名单、
+  8 MiB 上限、乐观版本冲突检测（`409`）；目标是否可写由会话的 sandbox 策略裁决。路由不可达时退化为下载文件。
 - 性能保护：XMind 只解压 `content.json` / `content.xml`（单条 24 MiB、总计 32 MiB）；文本超过 8 MiB、
   主题超过 20,000 个会被拒绝。拖拽只改 SVG transform、不重渲染；滚轮缩放按帧节流；节点使用 memo；
   文字测量有缓存；大图的撤销历史会自动缩短。

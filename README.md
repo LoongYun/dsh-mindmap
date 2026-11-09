@@ -67,14 +67,14 @@ The bundle also registers two host tools, so an agent can read and edit a map wi
   ]
   ```
 
-Both tools resolve workspace-relative or absolute paths and enforce the same workspace containment as the save route. `.xmind` is readable but not writable; convert it to `.mm` first. The viewer does not watch the file, so close and reopen the tab to see an agent's edit.
+Both tools accept workspace-relative or absolute paths. Writes are fenced by the session's sandbox policy: `workspace-write` confines them to the session workspace, full access does not. `.xmind` is readable but not writable; convert it to `.mm` first. The viewer does not watch the file, so close and reopen the tab to see an agent's edit.
 
 ## How it works
 
 - The client half registers a native `sidebar.right.pane.tab` type with an extension-priority address glob that is longer than `dsh-resource://file/**`, so it outranks `dsh-better-sidebar`'s editor for these extensions while still coexisting with it.
 - Files are read with `ctx.remote.workspaceFiles.readBytes`.
 - Rendering is hand-written SVG: no third-party renderer and no bundling step.
-- Saving goes through the host route `POST /dsh-mindmap/save`: connection fence, workspace containment, extension allow-list, 8 MiB body limit and an optimistic version check (`409` on conflict). When the route is unreachable, the viewer falls back to downloading the file.
+- Saving goes through the host route `POST /dsh-mindmap/save`: connection fence, extension allow-list, 8 MiB body limit and an optimistic version check (`409` on conflict). The session's sandbox policy decides whether the target path is writable. When the route is unreachable, the viewer falls back to downloading the file.
 - Performance guards: XMind archives only inflate `content.json` / `content.xml` (24 MiB per entry, 32 MiB total); text files over 8 MiB and maps over 20,000 topics are rejected. Panning moves the SVG transform without re-rendering, wheel zoom is frame-throttled, nodes are memoized, label measurements are cached, and undo history shrinks on large maps.
 
 ## Development

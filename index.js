@@ -7,14 +7,14 @@
  *
  *   POST /dsh-mindmap/save  { sessionId, path, content, baseVersion?, create? }
  *
- * The route enforces the connection fence, the session's workspace boundary,
- * the extension allow-list, the body size limit and an optimistic version
- * check before it writes. Both workspace-relative and absolute paths are
- * accepted; containment is decided after resolution, so an absolute path
- * outside the session's workspace is rejected.
+ * The route enforces the connection fence, the extension allow-list, the body
+ * size limit and an optimistic version check before it writes. Both
+ * workspace-relative and absolute paths are accepted; the session's sandbox
+ * policy is passed to `fs.writeText`, so it decides whether the target is
+ * writable (workspace-write confines writes to the workspace, full access does
+ * not).
  */
 
-import { realpath } from 'node:fs/promises'
 import path from 'node:path'
 import {
   MAX_NODES,
@@ -148,23 +148,12 @@ async function handleSave(ctx, req, res) {
     return
   }
 
-  let root
   let target
   try {
     const cwd = workingDirectory.get(session)
-    root = await fs.resolve(cwd)
     target = await fs.resolve(relativePath, { cwd })
   } catch {
     respond(res, 400, { ok: false, error: 'invalid-path' })
-    return
-  }
-
-  if (!fs.contains(root, target)) {
-    respond(res, 403, { ok: false, error: 'outside-workspace' })
-    return
-  }
-  if (!(await staysInside(fs, root, target))) {
-    respond(res, 403, { ok: false, error: 'outside-workspace' })
     return
   }
 
@@ -191,7 +180,11 @@ async function handleSave(ctx, req, res) {
   }
   try {
     await fs.writeText(target, content, undefined, undefined, policy)
-  } catch {
+  } catch (error) {
+    if (error?.code === 'FS_SANDBOX_DENIED') {
+      respond(res, 403, { ok: false, error: 'sandbox-denied' })
+      return
+    }
     respond(res, 500, { ok: false, error: 'write-failed' })
     return
   }
@@ -201,29 +194,6 @@ async function handleSave(ctx, req, res) {
     ok: true,
     version: typeof after?.version === 'string' ? after.version : undefined,
   })
-}
-
-/**
- * Reject a path whose real location escaped the real workspace root through a
- * symlink. Providers that do not expose a host path keep the lexical check.
- */
-async function staysInside(fs, root, target) {
-  let hostRoot
-  let hostTarget
-  try {
-    hostRoot = fs.processPath(root)
-    hostTarget = fs.processPath(target)
-  } catch {
-    return true
-  }
-  if (!hostRoot || !hostTarget) return true
-  const [realRoot, realTarget] = await Promise.all([
-    realpath(hostRoot).catch(() => undefined),
-    realpath(hostTarget).catch(() => undefined),
-  ])
-  if (realRoot === undefined || realTarget === undefined) return true
-  const relative = path.relative(realRoot, realTarget)
-  return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative)
 }
 
 function readJsonBody(req) {
@@ -322,7 +292,7 @@ function createOutlineTool(ctx) {
   return defineTool({
     name: 'mindmap_outline',
     description:
-      'Read a mind map as an indented outline with stable node ids (n1, n2, ...). Supports .mm, .opml, .km, .vym and .xmind (read-only). Use the ids with mindmap_apply; pass the returned version back as baseVersion. The path may be workspace-relative or absolute and must stay inside the session workspace.',
+      'Read a mind map as an indented outline with stable node ids (n1, n2, ...). Supports .mm, .opml, .km, .vym and .xmind (read-only). Use the ids with mindmap_apply; pass the returned version back as baseVersion. The path may be workspace-relative or absolute; writes are fenced by the session sandbox policy.',
     parameters: {
       path: {
         type: 'string',
@@ -488,10 +458,7 @@ async function resolveToolTarget(ctx, exec, rawPath) {
   }
 
   const cwd = await ctx.workingDirectory.ensure(exec.agent, exec.signal)
-  const root = await ctx.fs.resolve(cwd, { signal: exec.signal })
   const target = await ctx.fs.resolve(rawPath, { cwd, signal: exec.signal })
-  if (!ctx.fs.contains(root, target)) throw new Error('outside-workspace')
-  if (!(await staysInside(ctx.fs, root, target))) throw new Error('outside-workspace')
 
   let filePath = rawPath
   try {
