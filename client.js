@@ -78,6 +78,7 @@ window.__ModuleLoader__.load({
         saveFailed: '保存失败',
         versionConflict: '文件已在磁盘上变化，请重新打开后再保存',
         dirty: '有未保存的修改',
+        unsaved: '未保存',
         newTopic: '新主题',
         rootTopic: '中心主题',
         note: '备注',
@@ -139,6 +140,7 @@ window.__ModuleLoader__.load({
         saveFailed: 'Save failed',
         versionConflict: 'The file changed on disk; reopen it before saving',
         dirty: 'Unsaved changes',
+        unsaved: 'Unsaved',
         newTopic: 'New topic',
         rootTopic: 'Central topic',
         note: 'Note',
@@ -874,14 +876,17 @@ window.__ModuleLoader__.load({
 
     const STYLES = `
 .mm-root { position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0; color: var(--mm-text, inherit); }
-.mm-toolbar { display: flex; align-items: center; gap: 4px; padding: 6px 8px; flex-wrap: wrap; border-bottom: 1px solid var(--mm-line, rgba(127,127,127,.18)); }
 .mm-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 0; border-radius: 7px; background: transparent; color: inherit; cursor: pointer; opacity: .82; }
 .mm-btn:hover:not(:disabled) { background: var(--mm-hover, rgba(127,127,127,.16)); opacity: 1; }
 .mm-btn:disabled { opacity: .32; cursor: default; }
 .mm-btn[data-active="true"] { background: var(--mm-hover, rgba(127,127,127,.16)); }
 .mm-lang { width: auto; min-width: 28px; padding: 0 5px; font-size: 11px; font-weight: 650; letter-spacing: .02em; }
 .mm-sep { width: 1px; height: 18px; background: var(--mm-line, rgba(127,127,127,.22)); margin: 0 4px; }
-.mm-dock { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 1px; padding: 5px 6px; border-radius: 13px; background: rgba(127,127,127,.10); border: 1px solid rgba(127,127,127,.16); box-shadow: 0 10px 30px rgba(15,23,42,.16); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%); z-index: 5; white-space: nowrap; }
+.mm-dock { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); box-sizing: border-box; width: min(680px, calc(100% - 16px)); display: flex; flex-direction: column; gap: 3px; padding: 5px 6px 4px; border-radius: 14px; background: rgba(127,127,127,.10); border: 1px solid rgba(127,127,127,.16); box-shadow: 0 10px 30px rgba(15,23,42,.16); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%); z-index: 5; }
+.mm-dock-main { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 1px; }
+.mm-dock-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 3px 0; border-top: 1px solid rgba(127,127,127,.14); font-size: 11px; }
+.mm-dock-stats { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; }
+.mm-unsaved { font-size: 11px; opacity: .62; }
 .mm-dock .mm-btn { width: 30px; height: 30px; opacity: .78; }
 .mm-dock .mm-sep { margin: 0 3px; }
 .mm-zoom { width: auto !important; min-width: 44px; padding: 0 4px; font-size: 11px; font-variant-numeric: tabular-nums; letter-spacing: .01em; opacity: .7 !important; }
@@ -894,7 +899,6 @@ window.__ModuleLoader__.load({
 .mm-format-option:hover { background: rgba(127,127,127,.14); opacity: .95; }
 .mm-format-option[data-active="true"] { background: rgba(59,130,246,.16); color: #3b82f6; opacity: 1; }
 
-.mm-spacer { flex: 1; }
 .mm-select { height: 28px; max-width: 170px; border: 1px solid var(--mm-line, rgba(127,127,127,.28)); border-radius: 7px; background: var(--mm-surface, transparent); color: inherit; font: inherit; font-size: 12px; }
 .mm-badge { font-size: 11px; opacity: .62; white-space: nowrap; }
 .mm-dirty { width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; }
@@ -909,7 +913,7 @@ window.__ModuleLoader__.load({
 .mm-toggle { fill: var(--mm-toggle, rgba(127,127,127,.9)); stroke: var(--mm-surface, transparent); stroke-width: 2; cursor: pointer; }
 .mm-toggle-text { fill: #fff; font: 600 9px -apple-system, sans-serif; pointer-events: none; }
 .mm-input { position: absolute; box-sizing: border-box; padding: 6px 10px; border: 2px solid #3b82f6; border-radius: 9px; background: var(--mm-input, #fff); color: #111827; outline: none; font-family: inherit; z-index: 3; }
-.mm-status { position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%); max-width: 90%; padding: 6px 12px; border-radius: 8px; background: rgba(17,24,39,.9); color: #f9fafb; font-size: 12px; z-index: 4; pointer-events: none; }
+.mm-status { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); max-width: 90%; padding: 6px 12px; border-radius: 8px; background: rgba(17,24,39,.9); color: #f9fafb; font-size: 12px; z-index: 4; pointer-events: none; }
 .mm-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; height: 100%; padding: 24px; text-align: center; font-size: 13px; opacity: .8; }
 .mm-center strong { font-size: 14px; opacity: 1; }
 .mm-center pre { max-width: 100%; overflow: auto; font-size: 11px; text-align: left; opacity: .7; }
@@ -1083,10 +1087,14 @@ window.__ModuleLoader__.load({
         }
       })
       const t = useCallback((key) => (DICTS[lang] ?? DICTS.zh)[key] ?? key, [lang])
+      const tRef = useRef(t)
+      tRef.current = t
       const address = tab.contentId ?? tab.navigation?.address
       const [state, setState] = useState({ status: 'loading' })
       const [reloadKey, setReloadKey] = useState(0)
       const [doc, setDoc] = useState(undefined)
+      const docRef = useRef(doc)
+      docRef.current = doc
       const [version, setVersion] = useState(undefined)
       const [active, setActive] = useState(0)
       const [dirty, setDirty] = useState(false)
@@ -1130,7 +1138,7 @@ window.__ModuleLoader__.load({
       useEffect(() => {
         const parsed = parseAddress(address)
         if (!parsed || parsed.scope !== 'session') {
-          setState({ status: 'error', message: t('unsupported') })
+          setState({ status: 'error', message: tRef.current('unsupported') })
           return undefined
         }
         const controller = new AbortController()
@@ -1140,12 +1148,12 @@ window.__ModuleLoader__.load({
           try {
             const outcome = await ctx.remote.workspaceFiles.readBytes(parsed.sessionId, parsed.path, {}, controller.signal)
             if (!outcome || outcome.ok === false) {
-              throw new Error(outcome?.error?.message ?? t('error'))
+              throw new Error(outcome?.error?.message ?? tRef.current('error'))
             }
             const result = outcome.value ?? outcome
             const bytes = toBytes(result.data)
             const format = extensionOf(parsed.path)
-            if (!FORMATS.has(format)) throw new Error(t('unsupported'))
+            if (!FORMATS.has(format)) throw new Error(tRef.current('unsupported'))
             const parsedDoc = await parseFile(format, bytes)
             if (!alive) return
             setDoc({ ...parsedDoc, path: parsed.path, sessionId: parsed.sessionId })
@@ -1157,18 +1165,18 @@ window.__ModuleLoader__.load({
             setNeedsFit(true)
             setState({ status: 'ready' })
             if (parsedDoc.totalNodes > LARGE_MAP_NODES) {
-              say(t('largeMap').replace('{count}', String(parsedDoc.totalNodes)))
+              say(tRef.current('largeMap').replace('{count}', String(parsedDoc.totalNodes)))
             }
           } catch (error) {
             if (!alive || controller.signal.aborted) return
             const raw = String(error?.message ?? error)
             let message = raw
             if (raw.startsWith('TOO_MANY_NODES:')) {
-              message = t('tooManyNodes')
+              message = tRef.current('tooManyNodes')
                 .replace('{count}', raw.slice('TOO_MANY_NODES:'.length))
                 .replace('{limit}', String(MAX_NODES))
             } else if (raw === 'FILE_TOO_LARGE') {
-              message = t('fileTooLarge')
+              message = tRef.current('fileTooLarge')
             }
             setState({ status: 'error', message })
           }
@@ -1177,7 +1185,7 @@ window.__ModuleLoader__.load({
           alive = false
           controller.abort()
         }
-      }, [address, reloadKey, ctx, say, t])
+      }, [address, reloadKey, ctx, say])
 
       useEffect(() => {
         if (!dirty) return undefined
@@ -1305,12 +1313,14 @@ window.__ModuleLoader__.load({
 
       const commit = useCallback(
         (nextSheets, nextSelected) => {
-          setHistory((current) => ({ past: [...current.past.slice(-(historyLimit - 1)), doc.sheets], future: [] }))
-          setDoc((current) => ({ ...current, sheets: nextSheets }))
-          if (doc && EDITABLE.has(doc.format)) setDirty(true)
+          const current = docRef.current
+          if (!current) return
+          setHistory((history) => ({ past: [...history.past.slice(-(historyLimit - 1)), current.sheets], future: [] }))
+          setDoc((latest) => ({ ...latest, sheets: nextSheets }))
+          if (EDITABLE.has(current.format)) setDirty(true)
           if (nextSelected !== undefined) setSelected(nextSelected)
         },
-        [doc, historyLimit],
+        [historyLimit],
       )
 
       const toggleAll = useCallback(() => {
@@ -1437,15 +1447,26 @@ window.__ModuleLoader__.load({
 
       const applyText = useCallback(
         (id, value) => {
-          if (!doc) return
+          // Read the latest document at event time. A blur can fire from a
+          // handler captured before the preceding add/rename committed, and
+          // mutating that stale tree would silently drop the new node.
+          const current = docRef.current
+          if (!current) return
           const text = cleanText(value)
-          const sheets = mutateNode(id, (target) => {
+          let found = false
+          const sheets = current.sheets.map((item, index) => {
+            if (index !== active) return item
+            const root = structuredClone(item.root)
+            const target = findNode(root, id)
+            if (!target) return item
+            found = true
             target.text = text || (target.children.length > 0 ? target.text : ' ')
+            return { ...item, root }
           })
-          if (sheets) commit(sheets)
+          if (found) commit(sheets)
           setEditing(undefined)
         },
-        [doc, mutateNode, commit],
+        [active, commit],
       )
 
       const undo = useCallback(() => {
@@ -1728,57 +1749,6 @@ window.__ModuleLoader__.load({
         h('style', null, STYLES),
         h(
           'div',
-          { className: 'mm-toolbar' },
-          doc.sheets.length > 1 &&
-            h(
-              'select',
-              {
-                className: 'mm-select',
-                value: active,
-                title: t('sheet'),
-                onChange: (event) => {
-                  setActive(Number(event.target.value))
-                  setSelected(undefined)
-                  setNeedsFit(true)
-                },
-              },
-              doc.sheets.map((item, index) => h('option', { key: index, value: index }, item.title || `Sheet ${index + 1}`)),
-            ),
-          h('span', { className: 'mm-spacer' }),
-          h('span', { className: 'mm-badge' }, t('stats').replace('{nodes}', String(layout.count))),
-          !editable && h('span', { className: 'mm-badge' }, t('readOnly')),
-          dirty && h('span', { className: 'mm-dirty', title: t('dirty') }),
-          editable &&
-            h(
-              'button',
-              { className: 'mm-btn', title: t('save'), 'aria-label': t('save'), onClick: save, disabled: saving || !dirty },
-              h(Icon, { name: 'save' }),
-            ),
-          doc.format === 'xmind' &&
-            h('button', { className: 'mm-btn', title: t('convert'), 'aria-label': t('convert'), onClick: convertToEditable, disabled: saving }, h(Icon, { name: 'convert' })),
-          h('button', { className: 'mm-btn', title: t('export'), 'aria-label': t('export'), onClick: exportMm }, h(Icon, { name: 'download' })),
-          h('span', { className: 'mm-sep' }),
-          h(
-            'button',
-            {
-              className: 'mm-btn mm-lang',
-              title: lang === 'zh' ? t('toEnglish') : t('toChinese'),
-              'aria-label': lang === 'zh' ? t('toEnglish') : t('toChinese'),
-              onClick: () => {
-                const next = lang === 'zh' ? 'en' : 'zh'
-                setLang(next)
-                try {
-                  localStorage.setItem('dsh-mindmap:lang', next)
-                } catch {
-                  /* storage may be unavailable */
-                }
-              },
-            },
-            lang === 'zh' ? 'EN' : '中',
-          ),
-        ),
-        h(
-          'div',
           {
             className: 'mm-stage',
             ref: stageRef,
@@ -1845,107 +1815,167 @@ window.__ModuleLoader__.load({
               onPointerDown: (event) => event.stopPropagation(),
               onDoubleClick: (event) => event.stopPropagation(),
             },
-            editable &&
-              h('button', { type: 'button', className: 'mm-btn', title: t('undo'), 'aria-label': t('undo'), onClick: undo, disabled: history.past.length === 0 }, h(Icon, { name: 'undo' })),
-            editable &&
-              h('button', { type: 'button', className: 'mm-btn', title: t('redo'), 'aria-label': t('redo'), onClick: redo, disabled: history.future.length === 0 }, h(Icon, { name: 'redo' })),
-            editable && h('span', { className: 'mm-sep' }),
             h(
-              'button',
-              {
-                type: 'button',
-                className: 'mm-btn',
-                title: anyExpanded ? t('collapseAll') : t('expandAll'),
-                'aria-label': anyExpanded ? t('collapseAll') : t('expandAll'),
-                onClick: toggleAll,
-              },
-              h(Icon, { name: anyExpanded ? 'collapseAll' : 'expandAll' }),
-            ),
-            h('span', { className: 'mm-sep' }),
-            h('button', { type: 'button', className: 'mm-btn', title: t('zoomOut'), 'aria-label': t('zoomOut'), onClick: () => zoomCenter(1 / 1.2) }, h(Icon, { name: 'zoomOut' })),
-            h(
-              'button',
-              {
-                type: 'button',
-                className: 'mm-btn mm-zoom',
-                title: t('resetZoom'),
-                'aria-label': t('resetZoom'),
-                onClick: () => zoomCenter(1 / view.k),
-              },
-              `${Math.round(view.k * 100)}%`,
-            ),
-            h('button', { type: 'button', className: 'mm-btn', title: t('zoomIn'), 'aria-label': t('zoomIn'), onClick: () => zoomCenter(1.2) }, h(Icon, { name: 'zoomIn' })),
-            h('button', { type: 'button', className: 'mm-btn', title: t('fit'), 'aria-label': t('fit'), onClick: fit }, h(Icon, { name: 'fit' })),
-            h('span', { className: 'mm-sep' }),
-            h(
-              'button',
-              {
-                type: 'button',
-                className: 'mm-btn',
-                title: t('format'),
-                'aria-label': t('format'),
-                'aria-expanded': formatOpen,
-                'data-active': formatOpen,
-                onClick: () => setFormatOpen((open) => !open),
-              },
-              h(Icon, { name: 'format' }),
-            ),
-            formatOpen &&
+              'div',
+              { className: 'mm-dock-main' },
+              doc.sheets.length > 1 &&
+                h(
+                  'select',
+                  {
+                    className: 'mm-select',
+                    value: active,
+                    title: t('sheet'),
+                    onChange: (event) => {
+                      setActive(Number(event.target.value))
+                      setSelected(undefined)
+                      setNeedsFit(true)
+                    },
+                  },
+                  doc.sheets.map((item, index) => h('option', { key: index, value: index }, item.title || `Sheet ${index + 1}`)),
+                ),
+              editable &&
+                h('button', { type: 'button', className: 'mm-btn', title: t('undo'), 'aria-label': t('undo'), onClick: undo, disabled: history.past.length === 0 }, h(Icon, { name: 'undo' })),
+              editable &&
+                h('button', { type: 'button', className: 'mm-btn', title: t('redo'), 'aria-label': t('redo'), onClick: redo, disabled: history.future.length === 0 }, h(Icon, { name: 'redo' })),
+              editable && h('span', { className: 'mm-sep' }),
               h(
-                'div',
-                { className: 'mm-format-panel', role: 'dialog', 'aria-label': t('format') },
-                h('div', { className: 'mm-format-title' }, t('structure')),
-                h(
-                  'div',
-                  { className: 'mm-format-grid' },
-                  [
-                    ['right', 'structureRight'],
-                    ['balanced', 'structureBalanced'],
-                    ['down', 'structureDown'],
-                    ['left', 'structureLeft'],
-                  ].map(([value, label]) =>
-                    h(
-                      'button',
-                      {
-                        key: value,
-                        type: 'button',
-                        className: 'mm-format-option',
-                        'data-active': structure === value,
-                        title: t(label),
-                        'aria-label': t(label),
-                        'aria-pressed': structure === value,
-                        onClick: () => chooseStructure(value),
-                      },
-                      h(Icon, { name: label, size: 22 }),
-                    ),
-                  ),
-                ),
-                h('div', { className: 'mm-format-title' }, t('branch')),
-                h(
-                  'div',
-                  { className: 'mm-format-grid mm-format-grid-3' },
-                  [
-                    ['curve', 'branchCurve'],
-                    ['straight', 'branchStraight'],
-                    ['elbow', 'branchElbow'],
-                  ].map(([value, label]) =>
-                    h(
-                      'button',
-                      {
-                        key: value,
-                        type: 'button',
-                        className: 'mm-format-option',
-                        'data-active': branch === value,
-                        title: t(label),
-                        'aria-label': t(label),
-                        'aria-pressed': branch === value,
-                        onClick: () => chooseBranch(value),
-                      },
-                      h(Icon, { name: label, size: 22 }),
-                    ),
-                  ),
-                ),
+                'button',
+                {
+                  type: 'button',
+                  className: 'mm-btn',
+                  title: anyExpanded ? t('collapseAll') : t('expandAll'),
+                  'aria-label': anyExpanded ? t('collapseAll') : t('expandAll'),
+                  onClick: toggleAll,
+                },
+                h(Icon, { name: anyExpanded ? 'collapseAll' : 'expandAll' }),
               ),
+              h('span', { className: 'mm-sep' }),
+              h('button', { type: 'button', className: 'mm-btn', title: t('zoomOut'), 'aria-label': t('zoomOut'), onClick: () => zoomCenter(1 / 1.2) }, h(Icon, { name: 'zoomOut' })),
+              h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'mm-btn mm-zoom',
+                  title: t('resetZoom'),
+                  'aria-label': t('resetZoom'),
+                  onClick: () => zoomCenter(1 / view.k),
+                },
+                `${Math.round(view.k * 100)}%`,
+              ),
+              h('button', { type: 'button', className: 'mm-btn', title: t('zoomIn'), 'aria-label': t('zoomIn'), onClick: () => zoomCenter(1.2) }, h(Icon, { name: 'zoomIn' })),
+              h('button', { type: 'button', className: 'mm-btn', title: t('fit'), 'aria-label': t('fit'), onClick: fit }, h(Icon, { name: 'fit' })),
+              h('span', { className: 'mm-sep' }),
+              h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'mm-btn',
+                  title: t('format'),
+                  'aria-label': t('format'),
+                  'aria-expanded': formatOpen,
+                  'data-active': formatOpen,
+                  onClick: () => setFormatOpen((open) => !open),
+                },
+                h(Icon, { name: 'format' }),
+              ),
+              h('span', { className: 'mm-sep' }),
+              editable &&
+                h(
+                  'button',
+                  { type: 'button', className: 'mm-btn', title: t('save'), 'aria-label': t('save'), onClick: save, disabled: saving || !dirty },
+                  h(Icon, { name: 'save' }),
+                ),
+              doc.format === 'xmind' &&
+                h('button', { type: 'button', className: 'mm-btn', title: t('convert'), 'aria-label': t('convert'), onClick: convertToEditable, disabled: saving }, h(Icon, { name: 'convert' })),
+              h('button', { type: 'button', className: 'mm-btn', title: t('export'), 'aria-label': t('export'), onClick: exportMm }, h(Icon, { name: 'download' })),
+              formatOpen &&
+                h(
+                  'div',
+                  { className: 'mm-format-panel', role: 'dialog', 'aria-label': t('format') },
+                  h('div', { className: 'mm-format-title' }, t('structure')),
+                  h(
+                    'div',
+                    { className: 'mm-format-grid' },
+                    [
+                      ['right', 'structureRight'],
+                      ['balanced', 'structureBalanced'],
+                      ['down', 'structureDown'],
+                      ['left', 'structureLeft'],
+                    ].map(([value, label]) =>
+                      h(
+                        'button',
+                        {
+                          key: value,
+                          type: 'button',
+                          className: 'mm-format-option',
+                          'data-active': structure === value,
+                          title: t(label),
+                          'aria-label': t(label),
+                          'aria-pressed': structure === value,
+                          onClick: () => chooseStructure(value),
+                        },
+                        h(Icon, { name: label, size: 22 }),
+                      ),
+                    ),
+                  ),
+                  h('div', { className: 'mm-format-title' }, t('branch')),
+                  h(
+                    'div',
+                    { className: 'mm-format-grid mm-format-grid-3' },
+                    [
+                      ['curve', 'branchCurve'],
+                      ['straight', 'branchStraight'],
+                      ['elbow', 'branchElbow'],
+                    ].map(([value, label]) =>
+                      h(
+                        'button',
+                        {
+                          key: value,
+                          type: 'button',
+                          className: 'mm-format-option',
+                          'data-active': branch === value,
+                          title: t(label),
+                          'aria-label': t(label),
+                          'aria-pressed': branch === value,
+                          onClick: () => chooseBranch(value),
+                        },
+                        h(Icon, { name: label, size: 22 }),
+                      ),
+                    ),
+                  ),
+                ),
+            ),
+            h(
+              'div',
+              { className: 'mm-dock-meta' },
+              h(
+                'span',
+                { className: 'mm-dock-stats' },
+                h('span', { className: 'mm-badge' }, t('stats').replace('{nodes}', String(layout.count))),
+                !editable && h('span', { className: 'mm-badge' }, t('readOnly')),
+                dirty && h('span', { className: 'mm-dirty', title: t('dirty') }),
+                dirty && h('span', { className: 'mm-unsaved' }, t('unsaved')),
+              ),
+              h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'mm-btn mm-lang',
+                  title: lang === 'zh' ? t('toEnglish') : t('toChinese'),
+                  'aria-label': lang === 'zh' ? t('toEnglish') : t('toChinese'),
+                  onClick: () => {
+                    const next = lang === 'zh' ? 'en' : 'zh'
+                    setLang(next)
+                    try {
+                      localStorage.setItem('dsh-mindmap:lang', next)
+                    } catch {
+                      /* storage may be unavailable */
+                    }
+                  },
+                },
+                lang === 'zh' ? 'EN' : '中',
+              ),
+            ),
           ),
           editing && inputStyle
             ? h('input', {
