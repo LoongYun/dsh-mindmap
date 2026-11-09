@@ -1,0 +1,25 @@
+package.json
+  s_c5add4206fcec9::t_fedf3e5368eaab 3
+README.zh-CN.md
+  s_c5add4206fcec9::t_54faf0d26f8ca4 32-33,36-40
+cordis.patch.yml
+  s_c5add4206fcec9::t_fedf3e5368eaab 2
+README.md
+  s_c5add4206fcec9::t_47fda61a6b5e5e 31-32,35-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "24aba5ed61088679c711b331052d0707678b2d70",
+  "prompts": {},
+  "sessions": {
+    "s_c5add4206fcec9": {
+      "agent_id": {
+        "tool": "deepseekharness",
+        "id": "session-da1aee4f-1d5b-4086-bc64-e5f8e009230b",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "YunLong <yunlongjiang@trip.com>"
+    }
+  }
+}
