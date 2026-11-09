@@ -1,0 +1,23 @@
+client.js
+  s_c5add4206fcec9::t_d8a9eff2511c0d 883-885,887,891,1951,1953-1961,1963-1982,1984-1985
+README.md
+  s_c5add4206fcec9::t_3b276e25829cc4 41
+README.zh-CN.md
+  s_c5add4206fcec9::t_3b276e25829cc4 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "9d29eeaea299513acac9881d3b57896b686b2641",
+  "prompts": {},
+  "sessions": {
+    "s_c5add4206fcec9": {
+      "agent_id": {
+        "tool": "deepseekharness",
+        "id": "session-da1aee4f-1d5b-4086-bc64-e5f8e009230b",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "YunLong <yunlongjiang@trip.com>"
+    }
+  }
+}
