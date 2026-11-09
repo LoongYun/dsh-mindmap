@@ -29,7 +29,15 @@ XMind 的主题样式、关系线、附件等高级内容不会渲染，导出 `
 @jeffreylong/dsh-mindmap
 ```
 
+> npm 包名是 `@jeffreylong/dsh-mindmap`，**不要**输入裸名 `dsh-mindmap`——那是另一个无关的插件。安装后插件行显示为 `dsh-mindmap`，内部 row id 是 `jeffreylong-dsh-mindmap`，两者可以共存。
+
 点击 **立即启用（Enable now）**，然后刷新 Harness 窗口。
+
+如果你的 npm 源是私有镜像、没有代理 npmjs.org，把这个 scope 指向公共源：
+
+```ini
+@jeffreylong:registry=https://registry.npmjs.org/
+```
 
 也可以在终端把包装进 profile：
 

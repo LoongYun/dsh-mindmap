@@ -28,7 +28,15 @@ Open **Plugins** in DSH, choose **Add plugin** (some builds label it **Install b
 @jeffreylong/dsh-mindmap
 ```
 
+> The npm package is `@jeffreylong/dsh-mindmap`. Do **not** install the bare name `dsh-mindmap` — that is a different, unrelated package. After installation the plugin row is labelled `dsh-mindmap`, and its internal row id is `jeffreylong-dsh-mindmap`, so both can coexist.
+
 Choose **Enable now**, then reload the Harness window.
+
+If your npm registry is a private mirror that does not proxy npmjs.org, point this scope at the public registry:
+
+```ini
+@jeffreylong:registry=https://registry.npmjs.org/
+```
 
 From a terminal you can install the package into a profile with:
 

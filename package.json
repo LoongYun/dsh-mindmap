@@ -1,6 +1,6 @@
 {
   "name": "@jeffreylong/dsh-mindmap",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Open, edit and export XMind, FreeMind, OPML, KityMinder and VYM mind maps in the DeepSeek Harness right sidebar, with agent tools for reading and editing outlines",
   "author": "LoongYun",
   "type": "module",
