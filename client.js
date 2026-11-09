@@ -890,14 +890,15 @@ window.__ModuleLoader__.load({
 .mm-dock .mm-btn { width: 30px; height: 30px; opacity: .78; }
 .mm-dock .mm-sep { margin: 0 3px; }
 .mm-zoom { width: auto !important; min-width: 44px; padding: 0 4px; font-size: 11px; font-variant-numeric: tabular-nums; letter-spacing: .01em; opacity: .7 !important; }
-.mm-format-panel { position: absolute; bottom: calc(100% + 9px); left: 50%; transform: translateX(-50%); width: 300px; max-width: calc(100vw - 32px); padding: 13px 13px 11px; border-radius: 14px; background: rgba(127,127,127,.10); border: 1px solid rgba(127,127,127,.16); box-shadow: 0 18px 46px rgba(15,23,42,.22); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); text-align: left; }
+.mm-format-panel { position: absolute; bottom: calc(100% + 9px); left: 50%; transform: translateX(-50%); width: 300px; max-width: calc(100vw - 32px); padding: 13px 13px 11px; border-radius: 14px; background: rgba(24,24,27,.97); color: #f4f4f5; border: 1px solid rgba(255,255,255,.14); box-shadow: 0 22px 52px rgba(0,0,0,.38); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); text-align: left; z-index: 40; }
+.mm-tip { position: fixed; z-index: 60; transform: translate(-50%, -100%); padding: 4px 8px; border-radius: 6px; background: rgba(24,24,27,.95); color: #f4f4f5; font-size: 11px; line-height: 1.25; white-space: nowrap; pointer-events: none; box-shadow: 0 6px 18px rgba(0,0,0,.28); }
 .mm-format-title { margin: 1px 2px 8px; font-size: 11px; font-weight: 650; letter-spacing: .02em; opacity: .55; }
 .mm-format-title + .mm-format-grid { margin-bottom: 13px; }
 .mm-format-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .mm-format-grid-3 { grid-template-columns: repeat(3, 1fr); }
 .mm-format-option { display: flex; align-items: center; justify-content: center; height: 46px; padding: 0; border: 0; border-radius: 9px; background: transparent; color: inherit; cursor: pointer; opacity: .62; }
-.mm-format-option:hover { background: rgba(127,127,127,.14); opacity: .95; }
-.mm-format-option[data-active="true"] { background: rgba(59,130,246,.16); color: #3b82f6; opacity: 1; }
+.mm-format-option:hover { background: rgba(255,255,255,.10); opacity: .95; }
+.mm-format-option[data-active="true"] { background: rgba(59,130,246,.22); color: #60a5fa; opacity: 1; }
 
 .mm-select { height: 28px; max-width: 170px; border: 1px solid var(--mm-line, rgba(127,127,127,.28)); border-radius: 7px; background: var(--mm-surface, transparent); color: inherit; font: inherit; font-size: 12px; }
 .mm-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; outline: none; cursor: grab; }
@@ -1101,6 +1102,7 @@ window.__ModuleLoader__.load({
       const [editing, setEditing] = useState(undefined)
       const [menu, setMenu] = useState(undefined)
       const [formatOpen, setFormatOpen] = useState(false)
+      const [tip, setTip] = useState(undefined)
       const [structure, setStructure] = useState(() => storedChoice('dsh-mindmap:structure', ['right', 'balanced', 'down', 'left'], 'balanced'))
       const [branch, setBranch] = useState(() => storedChoice('dsh-mindmap:branch', ['curve', 'straight', 'elbow'], 'curve'))
       const [view, setView] = useState({ x: 0, y: 0, k: 1 })
@@ -1670,6 +1672,20 @@ window.__ModuleLoader__.load({
         storeChoice('dsh-mindmap:branch', value)
       }, [])
 
+      const showTip = useCallback((event) => {
+        const button = event.target?.closest?.('.mm-btn')
+        const text = button?.getAttribute('aria-label')
+        if (!text) {
+          setTip(undefined)
+          return
+        }
+        const rect = button.getBoundingClientRect()
+        const half = Math.min(110, Math.max(48, text.length * 3.6))
+        const x = Math.min(Math.max(rect.left + rect.width / 2, half + 8), window.innerWidth - half - 8)
+        const y = (dockRef.current?.getBoundingClientRect().top ?? rect.top) - 8
+        setTip((prev) => (prev?.text === text && prev.x === x && prev.y === y ? prev : { text, x, y }))
+      }, [])
+
       useEffect(() => {
         if (!formatOpen) return undefined
         const onPointerDown = (event) => {
@@ -1823,6 +1839,10 @@ window.__ModuleLoader__.load({
               ref: dockRef,
               onPointerDown: (event) => event.stopPropagation(),
               onDoubleClick: (event) => event.stopPropagation(),
+              onMouseOver: showTip,
+              onMouseLeave: () => setTip(undefined),
+              onFocus: showTip,
+              onBlur: () => setTip(undefined),
             },
             h(
               'div',
@@ -1843,43 +1863,40 @@ window.__ModuleLoader__.load({
                   doc.sheets.map((item, index) => h('option', { key: index, value: index }, item.title || `Sheet ${index + 1}`)),
                 ),
               editable &&
-                h('button', { type: 'button', className: 'mm-btn', title: t('undo'), 'aria-label': t('undo'), onClick: undo, disabled: history.past.length === 0 }, h(Icon, { name: 'undo' })),
+                h('button', { type: 'button', className: 'mm-btn', 'aria-label': t('undo'), onClick: undo, disabled: history.past.length === 0 }, h(Icon, { name: 'undo' })),
               editable &&
-                h('button', { type: 'button', className: 'mm-btn', title: t('redo'), 'aria-label': t('redo'), onClick: redo, disabled: history.future.length === 0 }, h(Icon, { name: 'redo' })),
+                h('button', { type: 'button', className: 'mm-btn', 'aria-label': t('redo'), onClick: redo, disabled: history.future.length === 0 }, h(Icon, { name: 'redo' })),
               editable && h('span', { className: 'mm-sep' }),
               h(
                 'button',
                 {
                   type: 'button',
                   className: 'mm-btn',
-                  title: anyExpanded ? t('collapseAll') : t('expandAll'),
                   'aria-label': anyExpanded ? t('collapseAll') : t('expandAll'),
                   onClick: toggleAll,
                 },
                 h(Icon, { name: anyExpanded ? 'collapseAll' : 'expandAll' }),
               ),
               h('span', { className: 'mm-sep' }),
-              h('button', { type: 'button', className: 'mm-btn', title: t('zoomOut'), 'aria-label': t('zoomOut'), onClick: () => zoomCenter(1 / 1.2) }, h(Icon, { name: 'zoomOut' })),
+              h('button', { type: 'button', className: 'mm-btn', 'aria-label': t('zoomOut'), onClick: () => zoomCenter(1 / 1.2) }, h(Icon, { name: 'zoomOut' })),
               h(
                 'button',
                 {
                   type: 'button',
                   className: 'mm-btn mm-zoom',
-                  title: t('resetZoom'),
                   'aria-label': t('resetZoom'),
                   onClick: () => zoomCenter(1 / view.k),
                 },
                 `${Math.round(view.k * 100)}%`,
               ),
-              h('button', { type: 'button', className: 'mm-btn', title: t('zoomIn'), 'aria-label': t('zoomIn'), onClick: () => zoomCenter(1.2) }, h(Icon, { name: 'zoomIn' })),
-              h('button', { type: 'button', className: 'mm-btn', title: t('fit'), 'aria-label': t('fit'), onClick: fit }, h(Icon, { name: 'fit' })),
+              h('button', { type: 'button', className: 'mm-btn', 'aria-label': t('zoomIn'), onClick: () => zoomCenter(1.2) }, h(Icon, { name: 'zoomIn' })),
+              h('button', { type: 'button', className: 'mm-btn', 'aria-label': t('fit'), onClick: fit }, h(Icon, { name: 'fit' })),
               h('span', { className: 'mm-sep' }),
               h(
                 'button',
                 {
                   type: 'button',
                   className: 'mm-btn',
-                  title: t('format'),
                   'aria-label': t('format'),
                   'aria-expanded': formatOpen,
                   'data-active': formatOpen,
@@ -1891,12 +1908,12 @@ window.__ModuleLoader__.load({
               editable &&
                 h(
                   'button',
-                  { type: 'button', className: 'mm-btn', title: t('save'), 'aria-label': t('save'), onClick: save, disabled: saving || !dirty },
+                  { type: 'button', className: 'mm-btn', 'aria-label': t('save'), onClick: save, disabled: saving || !dirty },
                   h(Icon, { name: 'save' }),
                 ),
               doc.format === 'xmind' &&
-                h('button', { type: 'button', className: 'mm-btn', title: t('convert'), 'aria-label': t('convert'), onClick: convertToEditable, disabled: saving }, h(Icon, { name: 'convert' })),
-              h('button', { type: 'button', className: 'mm-btn', title: t('export'), 'aria-label': t('export'), onClick: exportMm }, h(Icon, { name: 'download' })),
+                h('button', { type: 'button', className: 'mm-btn', 'aria-label': t('convert'), onClick: convertToEditable, disabled: saving }, h(Icon, { name: 'convert' })),
+              h('button', { type: 'button', className: 'mm-btn', 'aria-label': t('export'), onClick: exportMm }, h(Icon, { name: 'download' })),
               formatOpen &&
                 h(
                   'div',
@@ -1989,6 +2006,9 @@ window.__ModuleLoader__.load({
               `${t('stats').replace('{nodes}', String(sheet?.root?._count ?? layout.count))}${editable ? '' : ` · ${t('readOnly')}`}${dirty ? ` · ${t('unsaved')}` : ''}`,
             ),
           ),
+          tip && !formatOpen
+            ? h('div', { className: 'mm-tip', 'aria-hidden': true, style: { left: tip.x, top: tip.y } }, tip.text)
+            : null,
           editing && inputStyle
             ? h('input', {
                 className: 'mm-input',
