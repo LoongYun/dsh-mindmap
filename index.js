@@ -66,7 +66,7 @@ const ROUTE = '/dsh-mindmap/save'
 const MAX_BODY_BYTES = 8 * 1024 * 1024
 const WRITABLE_EXTENSIONS = new Set(['.mm', '.opml', '.km', '.vym'])
 
-export const inject = ['webServer', 'sessions', 'connection', 'fs', 'workingDirectory', 'tools']
+export const inject = ['webServer', 'sessions', 'connection', 'fs', 'workingDirectory', 'tools', 'sandboxPolicy']
 
 export function apply(ctx) {
   const saveRoute = (req, res) => {
@@ -183,8 +183,14 @@ async function handleSave(ctx, req, res) {
     return
   }
 
+  let policy
   try {
-    await fs.writeText(target, content)
+    policy = ctx.sandboxPolicy.resolve({ session })
+  } catch {
+    policy = undefined
+  }
+  try {
+    await fs.writeText(target, content, undefined, undefined, policy)
   } catch {
     respond(res, 500, { ok: false, error: 'write-failed' })
     return
@@ -433,7 +439,13 @@ function createApplyTool(ctx) {
         throw new Error('file-too-large: result exceeds 8 MiB')
       }
 
-      await ctx.fs.writeText(target, next, undefined, exec.signal)
+      let policy
+      try {
+        policy = ctx.sandboxPolicy.resolve({ session: exec.agent?.session })
+      } catch {
+        policy = undefined
+      }
+      await ctx.fs.writeText(target, next, undefined, exec.signal, policy)
       const after = await ctx.fs.stat(target, exec.signal)
       const outline = outlineTree(applied.root)
       return {
