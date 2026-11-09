@@ -1,0 +1,23 @@
+README.zh-CN.md
+  s_c5add4206fcec9::t_c0cfc92d6d0de3 43
+README.md
+  s_c5add4206fcec9::t_c0cfc92d6d0de3 41
+client.js
+  s_c5add4206fcec9::t_4f34046ad5bad9 1986-1989
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.52-trip",
+  "base_commit_sha": "4b80b0976ee2e90ac711d20ecf924427b2f09604",
+  "prompts": {},
+  "sessions": {
+    "s_c5add4206fcec9": {
+      "agent_id": {
+        "tool": "deepseekharness",
+        "id": "session-da1aee4f-1d5b-4086-bc64-e5f8e009230b",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "YunLong <yunlongjiang@trip.com>"
+    }
+  }
+}
