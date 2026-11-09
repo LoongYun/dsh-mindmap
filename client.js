@@ -886,10 +886,7 @@ window.__ModuleLoader__.load({
 .mm-sep { width: 1px; height: 18px; background: var(--mm-line, rgba(127,127,127,.22)); margin: 0 4px; }
 .mm-dock { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); box-sizing: border-box; width: fit-content; max-width: calc(100% - 200px); display: flex; flex-direction: column; gap: 3px; padding: 5px 6px 4px; border-radius: 14px; background: rgba(127,127,127,.10); border: 1px solid rgba(127,127,127,.16); box-shadow: 0 10px 30px rgba(15,23,42,.16); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%); z-index: 5; }
 .mm-dock-main { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 1px; }
-.mm-dock-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 3px 0; border-top: 1px solid rgba(127,127,127,.14); font-size: 11px; }
-.mm-dock-stats { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; }
 .mm-count { font-size: 11px; opacity: .55; white-space: nowrap; pointer-events: none; }
-.mm-unsaved { font-size: 11px; opacity: .62; }
 .mm-dock .mm-btn { width: 30px; height: 30px; opacity: .78; }
 .mm-dock .mm-sep { margin: 0 3px; }
 .mm-zoom { width: auto !important; min-width: 44px; padding: 0 4px; font-size: 11px; font-variant-numeric: tabular-nums; letter-spacing: .01em; opacity: .7 !important; }
@@ -903,7 +900,6 @@ window.__ModuleLoader__.load({
 .mm-format-option[data-active="true"] { background: rgba(59,130,246,.16); color: #3b82f6; opacity: 1; }
 
 .mm-select { height: 28px; max-width: 170px; border: 1px solid var(--mm-line, rgba(127,127,127,.28)); border-radius: 7px; background: var(--mm-surface, transparent); color: inherit; font: inherit; font-size: 12px; }
-.mm-dirty { width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; }
 .mm-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; outline: none; cursor: grab; }
 .mm-stage[data-dragging="true"] { cursor: grabbing; }
 .mm-stage svg { display: block; width: 100%; height: 100%; user-select: none; }
@@ -1958,17 +1954,6 @@ window.__ModuleLoader__.load({
                   ),
                 ),
             ),
-            dirty &&
-              h(
-                'div',
-                { className: 'mm-dock-meta' },
-                h(
-                  'span',
-                  { className: 'mm-dock-stats' },
-                  dirty && h('span', { className: 'mm-dirty', title: t('dirty') }),
-                  dirty && h('span', { className: 'mm-unsaved' }, t('unsaved')),
-                ),
-              ),
           ),
           h(
             'div',
@@ -1979,11 +1964,6 @@ window.__ModuleLoader__.load({
               onPointerDown: (event) => event.stopPropagation(),
               onDoubleClick: (event) => event.stopPropagation(),
             },
-            h(
-              'span',
-              { className: 'mm-count' },
-              `${t('stats').replace('{nodes}', String(sheet?.root?._count ?? layout.count))}${editable ? '' : ` · ${t('readOnly')}`}`,
-            ),
             h(
               'button',
               {
@@ -2002,6 +1982,11 @@ window.__ModuleLoader__.load({
                 },
               },
               lang === 'zh' ? 'EN' : '中',
+            ),
+            h(
+              'span',
+              { className: 'mm-count' },
+              `${t('stats').replace('{nodes}', String(sheet?.root?._count ?? layout.count))}${editable ? '' : ` · ${t('readOnly')}`}${dirty ? ` · ${t('unsaved')}` : ''}`,
             ),
           ),
           editing && inputStyle
