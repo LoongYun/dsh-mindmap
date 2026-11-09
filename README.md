@@ -38,7 +38,7 @@ There is no build step: DSH loads `client.js` directly as a browser module.
 - Right-click a topic for a context menu: new child, new sibling, rename, collapse and delete.
 - One floating bar at the bottom holds the controls: undo/redo, collapse-all, zoom out / percentage / zoom in, fit, format, save, convert and export.
 - The format panel offers four structures (right, balanced, down, left) and three branch-line styles (curved, straight, elbow). These are view preferences, not written into the file.
-- The topic count and a small `EN` / `中` toggle sit together in the lower-left corner. The bar's lower-left shows the read-only badge and unsaved state. It defaults to Chinese.
+- The topic count, the read-only note and a small `EN` / `中` toggle sit together in the lower-left corner. The bar only shows an unsaved indicator when there are unsaved edits. It defaults to Chinese.
 - `⌘Z` / `⇧⌘Z` undo and redo, `Space` collapses or expands, `Ctrl`/`⌘` + wheel zooms at the cursor, the wheel pans, drag to pan.
 - `⌘S` or the save button in the bottom bar saves. `.xmind` has no save button; use **Convert to editable .mm** (writes a sibling file) or **Export to .mm** (download).
 

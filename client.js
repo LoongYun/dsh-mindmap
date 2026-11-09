@@ -12,7 +12,7 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react')
     const h = React.createElement
-    const { useCallback, useEffect, useMemo, useRef, useState } = React
+    const { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } = React
 
     const NS = 'mindmap'
     const TAB_ID = '@loongyun/dsh-mindmap:viewer'
@@ -903,7 +903,6 @@ window.__ModuleLoader__.load({
 .mm-format-option[data-active="true"] { background: rgba(59,130,246,.16); color: #3b82f6; opacity: 1; }
 
 .mm-select { height: 28px; max-width: 170px; border: 1px solid var(--mm-line, rgba(127,127,127,.28)); border-radius: 7px; background: var(--mm-surface, transparent); color: inherit; font: inherit; font-size: 12px; }
-.mm-badge { font-size: 11px; opacity: .62; white-space: nowrap; }
 .mm-dirty { width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; }
 .mm-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; outline: none; cursor: grab; }
 .mm-stage[data-dragging="true"] { cursor: grabbing; }
@@ -1115,6 +1114,8 @@ window.__ModuleLoader__.load({
       const [size, setSize] = useState({ width: 800, height: 600 })
       const stageRef = useRef(null)
       const dockRef = useRef(null)
+      const cornerRef = useRef(null)
+      const [cornerLift, setCornerLift] = useState(0)
       const contentRef = useRef(null)
       const viewRef = useRef({ x: 0, y: 0, k: 1 })
       const wheelRef = useRef({ frame: 0, data: undefined })
@@ -1206,6 +1207,15 @@ window.__ModuleLoader__.load({
 
       const sheet = doc?.sheets?.[active]
       const layout = useMemo(() => (sheet ? layoutMap(sheet.root, structure) : undefined), [sheet, structure])
+
+      useLayoutEffect(() => {
+        const corner = cornerRef.current
+        const dock = dockRef.current
+        if (!corner || !dock) return
+        const overlaps = corner.getBoundingClientRect().right > dock.getBoundingClientRect().left - 8
+        const lift = overlaps ? dock.offsetHeight + 10 : 0
+        setCornerLift((current) => (current === lift ? current : lift))
+      }, [layout, size.width, size.height, lang, doc?.format, dirty])
 
       const fit = useCallback(() => {
         const stage = stageRef.current
@@ -1948,14 +1958,13 @@ window.__ModuleLoader__.load({
                   ),
                 ),
             ),
-            (!editable || dirty) &&
+            dirty &&
               h(
                 'div',
                 { className: 'mm-dock-meta' },
                 h(
                   'span',
                   { className: 'mm-dock-stats' },
-                  !editable && h('span', { className: 'mm-badge' }, t('readOnly')),
                   dirty && h('span', { className: 'mm-dirty', title: t('dirty') }),
                   dirty && h('span', { className: 'mm-unsaved' }, t('unsaved')),
                 ),
@@ -1963,8 +1972,18 @@ window.__ModuleLoader__.load({
           ),
           h(
             'div',
-            { className: 'mm-corner' },
-            h('span', { className: 'mm-count' }, t('stats').replace('{nodes}', String(sheet?.root?._count ?? layout.count))),
+            {
+              className: 'mm-corner',
+              ref: cornerRef,
+              style: { bottom: 12 + cornerLift },
+              onPointerDown: (event) => event.stopPropagation(),
+              onDoubleClick: (event) => event.stopPropagation(),
+            },
+            h(
+              'span',
+              { className: 'mm-count' },
+              `${t('stats').replace('{nodes}', String(sheet?.root?._count ?? layout.count))}${editable ? '' : ` · ${t('readOnly')}`}`,
+            ),
             h(
               'button',
               {
