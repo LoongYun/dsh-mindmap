@@ -27,7 +27,7 @@ Because `.xmind` is read-only, the toolbar offers **Convert to editable .mm**: i
    ```
 
 2. In DSH, open **Plugins** → **Install bundle** and point it at the cloned directory. You can also ask an agent to call `plugin_manager install_bundle` with that path.
-3. Reload the Harness window. If clicking a `.mm` file still opens the editor instead of this viewer, restart DSH once — the client injection list is read at startup.
+3. Reload the Harness window. If clicking a `.mm` file still opens the editor instead of this viewer, restart DSH once — the client injection list is read at startup. The save route and both agent tools live in the Host process, so restart DSH after installing or updating the bundle.
 
 There is no build step: DSH loads `client.js` directly as a browser module.
 

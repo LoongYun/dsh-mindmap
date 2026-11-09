@@ -29,7 +29,7 @@ XMind 的主题样式、关系线、附件等高级内容不会渲染，导出 `
 
 2. 在 DSH 中打开 **插件（Plugins）** → **安装 bundle（Install bundle）**，指向克隆下来的目录。
    也可以让 agent 用这个路径调用 `plugin_manager install_bundle`。
-3. 刷新 Harness 窗口。若点击 `.mm` 仍进入编辑器而不是本查看器，重启一次 DSH —— client 注入列表在启动时读取。
+3. 刷新 Harness 窗口。若点击 `.mm` 仍进入编辑器而不是本查看器，重启一次 DSH —— client 注入列表在启动时读取。保存路由和两个 agent 工具运行在 Host 进程里，安装或更新后同样需要重启 DSH。
 
 无需构建：`client.js` 由 DSH 直接作为浏览器模块加载。
 
