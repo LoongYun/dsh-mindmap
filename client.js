@@ -882,10 +882,11 @@ window.__ModuleLoader__.load({
 .mm-btn[data-active="true"] { background: var(--mm-hover, rgba(127,127,127,.16)); }
 .mm-lang { width: auto; min-width: 28px; padding: 0 5px; font-size: 11px; font-weight: 650; letter-spacing: .02em; }
 .mm-sep { width: 1px; height: 18px; background: var(--mm-line, rgba(127,127,127,.22)); margin: 0 4px; }
-.mm-dock { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); box-sizing: border-box; width: min(680px, calc(100% - 16px)); display: flex; flex-direction: column; gap: 3px; padding: 5px 6px 4px; border-radius: 14px; background: rgba(127,127,127,.10); border: 1px solid rgba(127,127,127,.16); box-shadow: 0 10px 30px rgba(15,23,42,.16); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%); z-index: 5; }
+.mm-dock { position: absolute; right: 12px; bottom: 12px; box-sizing: border-box; width: fit-content; max-width: calc(100% - 96px); display: flex; flex-direction: column; gap: 3px; padding: 5px 6px 4px; border-radius: 14px; background: rgba(127,127,127,.10); border: 1px solid rgba(127,127,127,.16); box-shadow: 0 10px 30px rgba(15,23,42,.16); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%); z-index: 5; }
 .mm-dock-main { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 1px; }
 .mm-dock-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 3px 0; border-top: 1px solid rgba(127,127,127,.14); font-size: 11px; }
 .mm-dock-stats { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; }
+.mm-count { position: absolute; left: 12px; bottom: 16px; z-index: 4; font-size: 11px; opacity: .55; white-space: nowrap; pointer-events: none; }
 .mm-unsaved { font-size: 11px; opacity: .62; }
 .mm-dock .mm-btn { width: 30px; height: 30px; opacity: .78; }
 .mm-dock .mm-sep { margin: 0 3px; }
@@ -1951,7 +1952,6 @@ window.__ModuleLoader__.load({
               h(
                 'span',
                 { className: 'mm-dock-stats' },
-                h('span', { className: 'mm-badge' }, t('stats').replace('{nodes}', String(layout.count))),
                 !editable && h('span', { className: 'mm-badge' }, t('readOnly')),
                 dirty && h('span', { className: 'mm-dirty', title: t('dirty') }),
                 dirty && h('span', { className: 'mm-unsaved' }, t('unsaved')),
@@ -1977,6 +1977,7 @@ window.__ModuleLoader__.load({
               ),
             ),
           ),
+          h('div', { className: 'mm-count' }, t('stats').replace('{nodes}', String(sheet?.root?._count ?? layout.count))),
           editing && inputStyle
             ? h('input', {
                 className: 'mm-input',
